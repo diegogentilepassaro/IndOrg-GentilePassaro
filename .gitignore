@@ -8,3 +8,4 @@ temp/
 draft/
 *.Rhistory
 *.Rapp.history
+.Rproj.user
