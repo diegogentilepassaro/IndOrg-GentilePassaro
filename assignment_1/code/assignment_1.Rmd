@@ -1,0 +1,21 @@
+---
+title: "Assignment_1"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Gasoline
+
+## a) Estimate the elasticity of supply of gasoline. Provide a confidence interval. Can you reject the hypothesis that the supply of gasoline is elastic?
+
+Our aim is to estimate $\theta = \frac{\partial G_{jt}}{\partial P^S_{jt}} \frac{P^S_{jt}}{G_{jt}}$. Where $G}$ is the highway gasoline consumption per capita, $P^S$ is the real price of gasoline excluding taxes, and $j,t$ index state and year respectively. If we assume that the elasticity of supply is constant over time and across states. We can estimate a model of the form:
+
+$\ln(G_{jt}) = \beta_0 + \beta_1 \ln(P^S_{jt}) + X'_{jt}\gamma + \eta_j + \eta_t + \epsilon_{jt}$
+
+Where $X'_{jt}$ is a vector of supply related controls. In this model $\beta_1$ is a direct estimate for the price elasticity of supply. However, in order to estimate $\beta_1$ consistently, we cannot rely on OLS using the perfect competition equilibrium prices that we observe in the data. This is because, price and quantity are determined together through equating supply and demand, and therefore the real price of gasoline excluding taxes $P^S_{jt}$ is a function of the supply shocks $\epsilon_{jt}$. We therefore need a demand shifter that does not affect supplied quantity other than through the price change induced from the new demand. Hopefully, 
+
+
+
