@@ -1,9 +1,14 @@
----
-title: "Assignment_1"
-output: pdf_document
----
+#### Preliminaries ####
+this.dir <- dirname(parent.frame(2)$ofile)
+setwd(this.dir)
+rm(list = ls())
 
-```{r setup, include=FALSE}
+unlink("../temp", recursive = TRUE)
+unlink("../output", recursive = TRUE)
+dir.create("../temp")
+dir.create("../output")
+
+#### Assignment 1 ####
 library(tibble)
 library(ggplot2)
 library(dplyr)
@@ -11,12 +16,10 @@ library(haven)
 library(moderndive)
 library(broom)
 library(lfe)
+
 source("../../lib/R/ols_reg.R")
 source("../../lib/R/iv_reg.R")
-knitr::opts_chunk$set(echo = TRUE)
-```
 
-```{r, echo=FALSE}
 unzip("../raw/2012-0324_data.zip", exdir = "../temp")
 
 gas_data <- read_dta("../temp/Web_materials/annual_regression_data.dta")
@@ -57,21 +60,40 @@ instruments_supply <- cbind(gas_data$urbanization, gas_data$railpop, gas_data$ro
 colnames(instruments_supply) <- c("urbanization", "railpop", "road_mileage")
 year <- as.vector(gas_data$year)
 state <- as.vector(gas_data$state_num)
-```
 
-### Gasoline
+# write_dta(gas_data, "../temp/gas_data.dta", version = 14)
 
-## a) Estimate the elasticity of supply of gasoline. Provide a confidence interval. Can you reject the hypothesis that the supply of gasoline is elastic?
+# # avg_gas_price_ts <- gas_data %>%
+# #   group_by(year) %>%
+# #   summarise(avg_gas_price = mean(taxin_real_gas_price_dollars, na.rm = TRUE))
+# # ggplot() + geom_line(data = avg_gas_price_ts, mapping = aes(x = year, y = avg_gas_price))
 
-Our aim is to estimate $\theta = \frac{\partial G_{jt}}{\partial P^S_{jt}} \frac{P^S_{jt}}{G_{jt}}$. Where $G$ is the highway gasoline consumption per capita, $P^S$ is the real price of gasoline excluding taxes, and $j,t$ index state and year respectively. If we assume that the elasticity of supply is constant over time and across states. We can estimate a model of the form:
+#### a) Estimate supply elasticity and b) demand elasticity
 
-$\ln(G_{jt}) = \beta_0 + \beta_1 \ln(P^S_{jt}) + X'_{jt}\gamma + \eta_j + \eta_t + \epsilon_{jt}$
+## Supply elasticity
+naive_supply_model <- ols_reg(ln_q_percapita, cbind(supply_regressors, endogenous), 
+                                    factor_var1 =  year, factor_var2 = state)
 
-Where $X'_{jt}$ is a vector of supply related controls. In this model $\beta_1$ is a direct estimate for the price elasticity of supply. However, in order to estimate $\beta_1$ consistently, we cannot rely on OLS using the perfect competition equilibrium prices that we observe in the data. This is because, price and quantity are determined together through equating supply and demand, and therefore the real price of gasoline excluding taxes $P^S_{jt}$ is a function of the supply shocks $\epsilon_{jt}$. We therefore need a demand shifter that does not affect supplied quantity other than through the price change induced from the new demand. Hopefully, 
+iv_estimate_supply_model <- iv_reg(ln_q_percapita, supply_regressors, endogenous, instruments_supply, 
+                                         factor_var1 =  year, factor_var2 = state)
 
-## c) 
+naive_supply_model$summary
+iv_estimate_supply_model$summary
 
-```{r, echo = FALSE}
+## Demand elasticity
+naive_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita + urbanization + real_gas_tax_state
+                           + ln_real_gas_p
+                           |year + state_num, data = gas_data)
+
+iv_estimate_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita + urbanization + real_gas_tax_state
+                                 |year + state_num|
+                                 (ln_real_gas_p ~ instrument_demand_price),
+                                 data = gas_data)
+
+tidy(naive_demand_model)
+tidy(iv_estimate_demand_model)
+
+### c) and d)  Supply shocks
 
 iv_estimate_supply_model <- felm(ln_q_percapita ~ 1 + ln_realinc_percapita + real_gas_tax_state
                                  | year + state_num | (ln_real_gas_producer_p ~ urbanization + road_mileage + railpop),
@@ -79,13 +101,10 @@ iv_estimate_supply_model <- felm(ln_q_percapita ~ 1 + ln_realinc_percapita + rea
 year_fes <- getfe(iv_estimate_supply_model) %>%
   filter(fe == "year") %>%
   select(year = idx, effect)
-ggplot(data = year_fes, aes(y = effect, x = year)) + geom_line(group = 1) + xlab("Year") + ylab("Year FE") + theme(axis.text.x=element_text(angle=90,vjust=0.5,hjust=1))
-```
+ggplot(data = year_fes, aes(y = effect, x = year)) + geom_line(group = 1) + 
+  xlab("Year") + ylab("Year FE") + theme(axis.text.x=element_text(angle=90,vjust=0.5,hjust=1))
 
-## d)
-
-## e)
-```{r, echo = FALSE}
+### e) Demand shocks
 iv_estimate_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita + urbanization + real_gas_tax_state
                                 |year + state_num|
                                 (ln_real_gas_p ~ instrument_demand_price),
@@ -95,10 +114,8 @@ year_fes <- getfe(iv_estimate_demand_model) %>%
   select(year = idx, effect)
 ggplot(data = year_fes, aes(y = effect, x = year)) + geom_line(group = 1) + 
   xlab("Year") + ylab("Year FE") + theme(axis.text.x=element_text(angle=90,vjust=0.5,hjust=1))
-```
 
-## i)
-```{r, echo = FALSE}
+### i)
 ri_unemp <- gas_data %>%
   filter(state == "Rhode Island") %>%
   select(year, state_num, unemployment)
@@ -108,7 +125,4 @@ ri_unemp_fix <- ri_unemp %>%
   mutate(unemployment = case_when(year>= 1985 & year <= 2000 ~ unemployment*100,
                            TRUE ~ unemployment))
 ggplot(data = ri_unemp_fix, aes(y = unemployment, x = year)) + geom_line()
-```
-
-
 
