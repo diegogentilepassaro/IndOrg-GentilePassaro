@@ -10,11 +10,15 @@ dir.create("../output")
 
 #### Assignment 1 ####
 library(tibble)
+library(ggplot2)
 library(dplyr)
 library(haven)
 library(moderndive)
 library(broom)
 library(lfe)
+
+source("../../lib/R/ols_reg.R")
+source("../../lib/R/iv_reg.R")
 
 unzip("../raw/2012-0324_data.zip", exdir = "../temp")
 
@@ -48,7 +52,16 @@ gas_data <- gas_data %>%
          mining_gsp, road_mileage, railpop, unemployment) %>%
   arrange(state_num, year)
 
-write_dta(gas_data, "../temp/gas_data.dta", version = 14)
+ln_q_percapita <- as.vector(gas_data$ln_q_percapita)
+endogenous <- as.vector(gas_data$ln_real_gas_producer_p)
+supply_regressors <- cbind(gas_data$ln_realinc_percapita, gas_data$real_gas_tax_state)
+colnames(supply_regressors) <- c("ln_realinc_percapita", "real_gas_tax_state")
+instruments_supply <- cbind(gas_data$urbanization, gas_data$railpop, gas_data$road_mileage)
+colnames(instruments_supply) <- c("urbanization", "railpop", "road_mileage")
+year <- as.vector(gas_data$year)
+state <- as.vector(gas_data$state_num)
+
+# write_dta(gas_data, "../temp/gas_data.dta", version = 14)
 
 # # avg_gas_price_ts <- gas_data %>%
 # #   group_by(year) %>%
@@ -58,22 +71,21 @@ write_dta(gas_data, "../temp/gas_data.dta", version = 14)
 #### a) Estimate supply elasticity and b) demand elasticity
 
 ## Supply elasticity
-naive_supply_model <- felm(ln_q_percapita ~ 1 + ln_realinc_percapita + real_gas_tax_state +
-                                            ln_real_gas_producer_p| year + state_num, data = gas_data)
+naive_supply_model <- ols_reg(ln_q_percapita, cbind(supply_regressors, endogenous), 
+                                    factor_var1 =  year, factor_var2 = state)
 
-iv_estimate_supply_model <- felm(ln_q_percapita ~ 1 + ln_realinc_percapita + real_gas_tax_state
-                                 | year + state_num | (ln_real_gas_producer_p ~ urbanization + road_mileage + railpop),
-                                 data = gas_data)
+iv_estimate_supply_model <- iv_reg(ln_q_percapita, supply_regressors, endogenous, instruments_supply, 
+                                         factor_var1 =  year, factor_var2 = state)
 
-tidy(naive_supply_model)
-tidy(iv_estimate_supply_model)
+naive_supply_model$summary
+iv_estimate_supply_model$summary
 
 ## Demand elasticity
-naive_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita + 
-                           ln_real_gas_p
+naive_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita + urbanization + real_gas_tax_state
+                           + ln_real_gas_p
                            |year + state_num, data = gas_data)
 
-iv_estimate_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita 
+iv_estimate_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita + urbanization + real_gas_tax_state
                                  |year + state_num|
                                  (ln_real_gas_p ~ instrument_demand_price),
                                  data = gas_data)
@@ -81,38 +93,36 @@ iv_estimate_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita
 tidy(naive_demand_model)
 tidy(iv_estimate_demand_model)
 
-# ### c) and d)  Supply shocks
-# data_frame_resid_supply <- augment(iv_estimate_supply_model)
-# supply_resid_yearly <- data_frame_resid_supply %>%
-#   group_by(year) %>%
-#   summarize(mean_supply_resid = weighted.mean(.resid)) %>%
-#   select(year, mean_supply_resid)
-# ggplot(data = supply_resid_yearly, aes(y = mean_supply_resid, x = year)) + geom_line()
-# 
-# ### e) Demand shocks
-# demand_shock_data <- gas_data %>%
-#   group_by(year) %>%
-#   summarise(pop_weighted_ln_real_inc_percapita = weighted.mean(ln_real_inc_percapita, pop_state_adj)) %>%
-#   mutate(fd_pop_weighted_ln_real_inc_percapita   = pop_weighted_ln_real_inc_percapita - lag(pop_weighted_ln_real_inc_percapita)) %>%
-#   select(year, fd_pop_weighted_ln_real_inc_percapita)
-# 
-# ggplot(data = demand_shock_data, aes(y = fd_pop_weighted_ln_real_inc_percapita, x = year)) + geom_line()
-# 
-# # data_frame_resid_demand <- augment(iv_estimate_demand_model)
-# # demand_resid_yearly <- data_frame_resid_demand %>%
-# #   group_by(year) %>%
-# #   summarize(mean_demand_resid = weighted.mean(.resid)) %>%
-# #   select(year, mean_demand_resid)
-# # ggplot(data = demand_resid_yearly, aes(y = mean_demand_resid, x = year)) + geom_line()
-# 
-# ### i) 
-# ri_unemp <- gas_data %>%
-#   filter(state == "Rhode Island") %>%
-#   select(year, state_num, unemployment)
-# ggplot(data = ri_unemp, aes(y = unemployment, x = year)) + geom_line()
-# 
-# ri_unemp_fix <- ri_unemp %>%
-#   mutate(unemployment = case_when(year>= 1985 & year <= 2000 ~ unemployment*100,
-#                            TRUE ~ unemployment))
-# ggplot(data = ri_unemp_fix, aes(y = unemployment, x = year)) + geom_line()
-# 
+### c) and d)  Supply shocks
+
+iv_estimate_supply_model <- felm(ln_q_percapita ~ 1 + ln_realinc_percapita + real_gas_tax_state
+                                 | year + state_num | (ln_real_gas_producer_p ~ urbanization + road_mileage + railpop),
+                                 data = gas_data)
+year_fes <- getfe(iv_estimate_supply_model) %>%
+  filter(fe == "year") %>%
+  select(year = idx, effect)
+ggplot(data = year_fes, aes(y = effect, x = year)) + geom_line(group = 1) + 
+  xlab("Year") + ylab("Year FE") + theme(axis.text.x=element_text(angle=90,vjust=0.5,hjust=1))
+
+### e) Demand shocks
+iv_estimate_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita + urbanization + real_gas_tax_state
+                                |year + state_num|
+                                (ln_real_gas_p ~ instrument_demand_price),
+                                data = gas_data)
+year_fes <- getfe(iv_estimate_demand_model) %>%
+  filter(fe == "year") %>%
+  select(year = idx, effect)
+ggplot(data = year_fes, aes(y = effect, x = year)) + geom_line(group = 1) + 
+  xlab("Year") + ylab("Year FE") + theme(axis.text.x=element_text(angle=90,vjust=0.5,hjust=1))
+
+### i)
+ri_unemp <- gas_data %>%
+  filter(state == "Rhode Island") %>%
+  select(year, state_num, unemployment)
+ggplot(data = ri_unemp, aes(y = unemployment, x = year)) + geom_line()
+
+ri_unemp_fix <- ri_unemp %>%
+  mutate(unemployment = case_when(year>= 1985 & year <= 2000 ~ unemployment*100,
+                           TRUE ~ unemployment))
+ggplot(data = ri_unemp_fix, aes(y = unemployment, x = year)) + geom_line()
+
