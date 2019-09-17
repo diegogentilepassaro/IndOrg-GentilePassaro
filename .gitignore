@@ -6,3 +6,7 @@ tables/
 figures/
 temp/
 draft/
+*.Rhistory
+*.Rapp.history
+.Rproj.user
+.Rproj.user/
