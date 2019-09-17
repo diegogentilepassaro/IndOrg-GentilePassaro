@@ -6,3 +6,4 @@ tables/
 figures/
 temp/
 draft/
+*.Rhistory
