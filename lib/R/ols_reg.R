@@ -1,8 +1,8 @@
 #### OLS regression with constant, up to two-way fixed effects, and option for robust standard errors
 
-ols_reg <- function (y, X, factor_var1 = NULL, factor_var2 = NULL, robust = FALSE) {
+ols_reg <- function (y, X = NULL, factor_var1 = NULL, factor_var2 = NULL, robust = FALSE) {
   outcome.assertion <- is.vector(y)
-  controls.assertion <- (is.matrix(X) | is.vector(X))
+  controls.assertion <- (is.matrix(X) | is.vector(X) | is.null(X))
   
   if (outcome.assertion == FALSE | controls.assertion == FALSE) {
     print("y needs to be a vector and X a vector or a matrix")
@@ -12,7 +12,13 @@ ols_reg <- function (y, X, factor_var1 = NULL, factor_var2 = NULL, robust = FALS
   nbr_obs_y <- length(y)
 
   cons <- rep(1,nbr_obs_y)
-  X <- cbind(X, cons)
+  
+  if (is.null(X) == TRUE) {
+    X = cons
+  }
+  else{
+    X <- cbind(X, cons)
+  }
   
   if (is.null(factor_var1) == FALSE){
     factor1.vector.assertion <- is.vector(factor_var1)
@@ -85,6 +91,7 @@ ols_reg <- function (y, X, factor_var1 = NULL, factor_var2 = NULL, robust = FALS
     summary <- t(rbind(t(betas), robust_se_betas, robust_t_stats))
     colnames(summary) <- c("beta", "robust_se_beta", "robust_t_stat")
     return_list <- list("betas" = betas, "ses" = robust_se_betas, "t_stats" = robust_t_stats,
+                        "obs" = as.numeric(nbr_obs_y), "df" = as.numeric(nbr_obs_y - nbr_regressors),
                         "summary" = summary, "predicted" = y_hat, "residuals" = residuals)
   }
   if (robust == FALSE) {
@@ -95,6 +102,7 @@ ols_reg <- function (y, X, factor_var1 = NULL, factor_var2 = NULL, robust = FALS
     summary <- t(rbind(t(betas), se_betas, t_stats))
     colnames(summary) <- c("beta", "se_beta", "t_stat")
     return_list <- list("betas" = betas, "ses" = se_betas, "t_stats" = t_stats,
+                        "obs" = as.numeric(nbr_obs_y), "df" = as.numeric(nbr_obs_y - nbr_regressors),
                         "summary" = summary, "predicted" = y_hat, "residuals" = residuals)
   }
 

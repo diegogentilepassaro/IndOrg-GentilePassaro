@@ -24,46 +24,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, echo=FALSE}
-unzip("../raw/2012-0324_data.zip", exdir = "../temp")
-
-gas_data <- read_dta("../temp/Web_materials/annual_regression_data.dta")
-gas_data <- as_tibble(gas_data)
-gas_data <- gas_data %>%
-  filter(is.na(id) == FALSE)
-gas_data <- mutate(gas_data,
-                   observation_id         = row_number(),
-                   real_gas_p             = ((taxin_gas_price)/cpi87),
-                   real_gas_producer_p    = (taxin_gas_price - gas_tax_all)/cpi87,
-                   ln_real_gas_producer_p = log(real_gas_producer_p),
-                   ln_real_gas_p          = log(real_gas_p),
-                   q_percapita            = (hug/pop_state_adj)*1000,
-                   ln_q_percapita         = log(q_percapita),
-                   real_gas_tax_state     = ((sgastax)/cpi87),
-                   ln_real_gas_tax_state  = log(real_gas_tax_state),
-                   realinc_percapita      = (realincome_state*1000/pop_state_adj),
-                   ln_realinc_percapita   = log(realinc_percapita),
-                   ln_real_oilprice       = log(real_oilprice))
-real_state_tax_66 <- gas_data %>%
-  filter(year == 1966) %>%
-  select(state_num, real_gas_tax_state_66 = real_gas_tax_state)
-
-gas_data <- left_join(gas_data, real_state_tax_66, "state_num") %>%
-  mutate(instrument_demand_price = real_gas_tax_state_66 * real_oilprice)
-gas_data <- gas_data %>%
-  select(observation_id, year, state_num, state, ln_real_gas_p, ln_real_gas_producer_p, ln_q_percapita,
-         real_gas_tax_state, ln_real_gas_tax_state, real_gas_tax_state_66, instrument_demand_price, 
-         ln_real_oilprice, real_oilprice, realinc_percapita, ln_realinc_percapita, pop_state_adj, urbanization, 
-         mining_gsp, road_mileage, railpop, unemployment) %>%
-  arrange(state_num, year)
-
-ln_q_percapita <- as.vector(gas_data$ln_q_percapita)
-endogenous <- as.vector(gas_data$ln_real_gas_producer_p)
-supply_regressors <- cbind(gas_data$ln_realinc_percapita, gas_data$real_gas_tax_state)
-colnames(supply_regressors) <- c("ln_realinc_percapita", "real_gas_tax_state")
-instruments_supply <- cbind(gas_data$urbanization, gas_data$railpop, gas_data$road_mileage)
-colnames(instruments_supply) <- c("urbanization", "railpop", "road_mileage")
-year <- as.vector(gas_data$year)
-state <- as.vector(gas_data$state_num)
+source("preclean.R")
 ```
 
 ### Gasoline

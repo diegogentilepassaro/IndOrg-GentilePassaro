@@ -9,111 +9,120 @@ dir.create("../temp")
 dir.create("../output")
 
 #### Assignment 1 ####
-library(tibble)
-library(ggplot2)
 library(dplyr)
+library(stringr)
+library(ggplot2)
 library(haven)
 library(moderndive)
 library(broom)
 library(lfe)
 
+source("preclean.R")
 source("../../lib/R/ols_reg.R")
 source("../../lib/R/iv_reg.R")
-
-unzip("../raw/2012-0324_data.zip", exdir = "../temp")
-
-gas_data <- read_dta("../temp/Web_materials/annual_regression_data.dta")
-gas_data <- as_tibble(gas_data)
-gas_data <- gas_data %>%
-  filter(is.na(id) == FALSE)
-gas_data <- mutate(gas_data,
-                   observation_id         = row_number(),
-                   real_gas_p             = ((taxin_gas_price)/cpi87),
-                   real_gas_producer_p    = (taxin_gas_price - gas_tax_all)/cpi87,
-                   ln_real_gas_producer_p = log(real_gas_producer_p),
-                   ln_real_gas_p          = log(real_gas_p),
-                   q_percapita            = (hug/pop_state_adj)*1000,
-                   ln_q_percapita         = log(q_percapita),
-                   real_gas_tax_state     = ((sgastax)/cpi87),
-                   ln_real_gas_tax_state  = log(real_gas_tax_state),
-                   realinc_percapita      = (realincome_state*1000/pop_state_adj),
-                   ln_realinc_percapita   = log(realinc_percapita),
-                   ln_real_oilprice       = log(real_oilprice))
-real_state_tax_66 <- gas_data %>%
-  filter(year == 1966) %>%
-  select(state_num, real_gas_tax_state_66 = real_gas_tax_state)
-
-gas_data <- left_join(gas_data, real_state_tax_66, "state_num") %>%
-  mutate(instrument_demand_price = real_gas_tax_state_66 * real_oilprice)
-gas_data <- gas_data %>%
-  select(observation_id, year, state_num, state, ln_real_gas_p, ln_real_gas_producer_p, ln_q_percapita,
-         real_gas_tax_state, ln_real_gas_tax_state, real_gas_tax_state_66, instrument_demand_price, 
-         ln_real_oilprice, real_oilprice, realinc_percapita, ln_realinc_percapita, pop_state_adj, urbanization, 
-         mining_gsp, road_mileage, railpop, unemployment) %>%
-  arrange(state_num, year)
-
-ln_q_percapita <- as.vector(gas_data$ln_q_percapita)
-endogenous <- as.vector(gas_data$ln_real_gas_producer_p)
-supply_regressors <- cbind(gas_data$ln_realinc_percapita, gas_data$real_gas_tax_state)
-colnames(supply_regressors) <- c("ln_realinc_percapita", "real_gas_tax_state")
-instruments_supply <- cbind(gas_data$urbanization, gas_data$railpop, gas_data$road_mileage)
-colnames(instruments_supply) <- c("urbanization", "railpop", "road_mileage")
-year <- as.vector(gas_data$year)
-state <- as.vector(gas_data$state_num)
-
-# write_dta(gas_data, "../temp/gas_data.dta", version = 14)
-
-# # avg_gas_price_ts <- gas_data %>%
-# #   group_by(year) %>%
-# #   summarise(avg_gas_price = mean(taxin_real_gas_price_dollars, na.rm = TRUE))
-# # ggplot() + geom_line(data = avg_gas_price_ts, mapping = aes(x = year, y = avg_gas_price))
 
 #### a) Estimate supply elasticity and b) demand elasticity
 
 ## Supply elasticity
-naive_supply_model <- ols_reg(ln_q_percapita, cbind(supply_regressors, endogenous), 
-                                    factor_var1 =  year, factor_var2 = state)
+naive_supply_model <- ols_reg(y = fd_ln_q_supply, X = cbind(endo_supply, controls_supply), 
+                                    factor_var1 =  year_supply, factor_var2 = state_supply)
 
-iv_estimate_supply_model <- iv_reg(ln_q_percapita, supply_regressors, endogenous, instruments_supply, 
-                                         factor_var1 =  year, factor_var2 = state)
+iv_estimate_supply_model <- iv_reg(y = fd_ln_q_supply, X = controls_supply, endo = endo_supply, 
+                                   instr = instruments_supply, factor_var1 =  year_supply, factor_var2 = state_supply)
 
-naive_supply_model$summary
-iv_estimate_supply_model$summary
+supply_model_data <- data.frame(var = row.names(iv_estimate_supply_model$summary), 
+                                iv_estimate_supply_model$summary)
+df_supply_model <- iv_estimate_supply_model$df 
+supply_endo <- supply_model_data %>%
+  filter(stringr::str_detect(var, "endo_supply")) %>%
+  mutate(t_test_elastic = (beta - 1)/se_beta)
+t_test_supply_elastic <- supply_endo$t_test_elastic
+critical_value_supply <- qt(p = 0.05, df = df_supply_model)
+
+if (abs(supply_endo$t_test_elastic) >= abs(critical_value_supply)) {
+  print("Reject hypothesis that supply is elastic")
+} else {
+  print("Can't reject hypothesis that supply is elastic")
+}
+
+supply_elasticity <- as.numeric(supply_endo$beta)
 
 ## Demand elasticity
-naive_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita + urbanization + real_gas_tax_state
-                           + ln_real_gas_p
-                           |year + state_num, data = gas_data)
+naive_demand_model <- ols_reg(y = fd_ln_q_demand, X = cbind(endo_demand, controls_demand), 
+                              factor_var1 =  year_demand, factor_var2 = state_demand)
 
-iv_estimate_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita + urbanization + real_gas_tax_state
-                                 |year + state_num|
-                                 (ln_real_gas_p ~ instrument_demand_price),
-                                 data = gas_data)
+iv_estimate_demand_model <- iv_reg(y = fd_ln_q_demand, X = controls_demand, endo = endo_demand, 
+                                   instr = instruments_demand, factor_var1 =  year_demand, factor_var2 = state_demand)
 
-tidy(naive_demand_model)
-tidy(iv_estimate_demand_model)
+demand_model_data <- data.frame(var = row.names(iv_estimate_demand_model$summary), 
+                                iv_estimate_demand_model$summary)
+df_demand_model <- iv_estimate_supply_model$df 
+demand_endo <- demand_model_data %>%
+  filter(stringr::str_detect(var, "endo_demand")) %>%
+  mutate(t_test_elastic = (beta - (-1))/se_beta)
+t_test_demand_elastic <- demand_endo$t_test_elastic
+critical_value_demand <- qt(p = 0.05, df = df_demand_model)
+
+if (abs(demand_endo$t_test_elastic) >= abs(critical_value_demand)) {
+  print("Reject hypothesis that supply is elastic")
+} else {
+  print("Can't reject hypothesis that supply is elastic")
+}
+
+demand_elasticity <- as.numeric(demand_endo$beta)
 
 ### c) and d)  Supply shocks
+supply_shock_data <- data.frame(var = row.names(iv_estimate_supply_model$summary), 
+                                iv_estimate_supply_model$summary)
+supply_shock_data <- supply_shock_data %>%
+  filter(stringr::str_detect(var, "year")) %>%
+  mutate(year = substring(var, -4)) %>%
+  select(year, beta)
 
-iv_estimate_supply_model <- felm(ln_q_percapita ~ 1 + ln_realinc_percapita + real_gas_tax_state
-                                 | year + state_num | (ln_real_gas_producer_p ~ urbanization + road_mileage + railpop),
-                                 data = gas_data)
-year_fes <- getfe(iv_estimate_supply_model) %>%
-  filter(fe == "year") %>%
-  select(year = idx, effect)
-ggplot(data = year_fes, aes(y = effect, x = year)) + geom_line(group = 1) + 
+ggplot(data = supply_shock_data, aes(y = beta, x = year)) + geom_line(group = 1) +
   xlab("Year") + ylab("Year FE") + theme(axis.text.x=element_text(angle=90,vjust=0.5,hjust=1))
 
-### e) Demand shocks
-iv_estimate_demand_model <- felm(ln_q_percapita ~ 1 + realinc_percapita + urbanization + real_gas_tax_state
-                                |year + state_num|
-                                (ln_real_gas_p ~ instrument_demand_price),
-                                data = gas_data)
-year_fes <- getfe(iv_estimate_demand_model) %>%
-  filter(fe == "year") %>%
-  select(year = idx, effect)
-ggplot(data = year_fes, aes(y = effect, x = year)) + geom_line(group = 1) + 
+# ### e) Demand shocks
+demand_shock_data <- data.frame(var = row.names(iv_estimate_demand_model$summary), 
+                                iv_estimate_demand_model$summary)
+demand_shock_data <- demand_shock_data %>%
+  filter(stringr::str_detect(var, "year")) %>%
+  mutate(year = substring(var, -4)) %>%
+  select(year, beta)
+
+ggplot(data = demand_shock_data, aes(y = beta, x = year)) + geom_line(group = 1) +
   xlab("Year") + ylab("Year FE") + theme(axis.text.x=element_text(angle=90,vjust=0.5,hjust=1))
+
+### f)
+ri_2008_data <- gas_data %>%
+  filter(state == "Rhode Island", year == 2008)
+
+quantity <- as.numeric(ri_2008_data %>%
+                         mutate(quantity = exp(ln_q_percapita)) %>%
+                         select(quantity))
+demand_constant <- as.numeric(ri_2008_data %>%
+  mutate(demand_constant = (exp(ln_q_percapita))/(exp(ln_real_gas_p)^demand_elasticity)) %>%
+  select(demand_constant))
+supply_constant <- as.numeric(ri_2008_data %>%
+                                mutate(supply_constant = (exp(ln_q_percapita))/(exp(ln_real_gas_producer_p)^supply_elasticity)) %>%
+                                select(supply_constant))
+
+price_producer <- as.numeric(ri_2008_data %>%
+                                mutate(price_producer = exp(ln_real_gas_producer_p)) %>%
+                                select(price_producer))
+price_consumer <- as.numeric(ri_2008_data %>%
+                               mutate(price_consumer = exp(ln_real_gas_p)) %>%
+                               select(price_consumer))
+total_tax <- price_consumer - price_producer
+new_price <- (demand_constant/supply_constant)^(1/(supply_elasticity - demand_elasticity))
+  
+### g)
+demand <- function(x) {demand_constant*(x^(demand_elasticity))}
+supply <- function(x) {supply_constant*(x^(supply_elasticity))}
+change_cs <- integrate(demand, lower = new_price, upper = price_consumer)$value
+change_ps <- integrate(supply, lower = price_producer, upper = new_price)$value
+gov_loss <- quantity*(price_consumer- price_producer)
+change_ts <- change_cs + change_ps - gov_loss
 
 ### i)
 ri_unemp <- gas_data %>%
