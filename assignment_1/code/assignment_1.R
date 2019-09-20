@@ -115,6 +115,13 @@ price_consumer <- as.numeric(ri_2008_data %>%
                                select(price_consumer))
 total_tax <- price_consumer - price_producer
 new_price <- (demand_constant/supply_constant)^(1/(supply_elasticity - demand_elasticity))
+new_quantity <- demand_constant*new_price^demand_elasticity
+
+if (round(new_quantity, digits = 3) == round(supply_constant*new_price^supply_elasticity,digits = 3)){
+  print("Celebrate: Demand equals supply")
+}else{
+  print("Oops, demand does not equal supply")
+}
   
 ### g)
 demand <- function(x) {demand_constant*(x^(demand_elasticity))}
