@@ -17,6 +17,10 @@ test_iv_reg <- iv_reg(y, X, endo, instr)
 test_iv_reg$summary
 test_iv_reg$summary_fs
 
+test_iv_reg_no_cons <- iv_reg(y, X, endo, instr, incl_cons = FALSE)
+test_iv_reg_no_cons$summary
+test_iv_reg_no_cons$summary_fs
+
 test_iv_reg_robust <- iv_reg(y, X, endo, instr, robust = TRUE)
 test_iv_reg_robust$summary
 test_iv_reg_robust$summary_fs

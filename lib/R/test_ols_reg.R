@@ -14,6 +14,9 @@ X <- cbind(x1)
 test_ols_reg <- ols_reg(y, X)
 test_ols_reg$summary
 
+test_ols_reg_no_cons <- ols_reg(y, X, incl_const = FALSE)
+test_ols_reg_no_cons$summary
+
 test_ols_reg_robust <- ols_reg(y, X, robust = TRUE)
 test_ols_reg_robust$summary
 

@@ -1,6 +1,6 @@
 #### IV regression with constant, up to two-way fixed effects, and option for robust standard errors
 
-iv_reg <- function (y, X = NULL, endo, instr, factor_var1 = NULL, 
+iv_reg <- function (y, X = NULL, endo, instr, incl_const = TRUE, factor_var1 = NULL, 
                     factor_var2 = NULL, robust = FALSE) {
   outcome.assertion <- is.vector(y)
   controls.assertion <- (is.matrix(X) | is.vector(X) | is.null(X))
@@ -14,15 +14,17 @@ iv_reg <- function (y, X = NULL, endo, instr, factor_var1 = NULL,
   }
   
   nbr_obs_y <- length(y)
+  if (incl_const == TRUE) {
+    cons <- rep(1,nbr_obs_y)
+  } else {
+    cons <- NULL
+    if (is.null(X) == TRUE & is.null(endo) == TRUE) {
+      print("Regressor set cannot be empty")
+      break  
+    }
+  } 
   
-  cons <- rep(1,nbr_obs_y)
-  
-  if (is.null(X) == TRUE) {
-    X = cons
-  }
-  else{
-    X <- cbind(X, cons)
-  }
+  X <- cbind(cons, X)
   
   nbr_controls <- dim(X)[2]
   

@@ -29,35 +29,35 @@ gas_data <- gas_data %>%
          fd_ln_q_percapita = ln_q_percapita - lag(ln_q_percapita),
          fd_ln_realinc_percapita = ln_realinc_percapita - lag(ln_realinc_percapita),
          fd_ln_real_gas_tax_all = ln_real_gas_tax_all - lag(ln_real_gas_tax_all),
-         fd_urbanization = urbanization - lag(urbanization))
+         fd_urbanization = urbanization - lag(urbanization),
+         fd_budget_surplus = budget_surplus - lag(budget_surplus),
+         fd_real_oilprice = real_oilprice - lag(real_oilprice))
 
 gas_data <- gas_data %>%
   select(observation_id, year, state_num, state, fd_ln_real_gas_p, fd_ln_real_gas_producer_p, fd_ln_q_percapita,
-         fd_ln_real_gas_tax_all, fd_ln_realinc_percapita, fd_urbanization, unemployment, urbanization, ln_real_gas_p,
-         ln_real_gas_producer_p, ln_q_percapita, ln_real_gas_tax_all, ln_realinc_percapita)
+         fd_ln_real_gas_tax_all, fd_ln_realinc_percapita, fd_budget_surplus, fd_urbanization, fd_real_oilprice,
+         unemployment, ln_real_gas_p, ln_real_gas_producer_p, ln_q_percapita)
 
 # write_dta(gas_data, "../temp/gas_data.dta", version = 14)
 
 gas_data_supply <- gas_data %>%
-  select(fd_ln_q_percapita, fd_ln_real_gas_producer_p, fd_ln_real_gas_tax_all, 
-         fd_ln_realinc_percapita, fd_urbanization, year, state_num)
+  select(fd_ln_q_percapita, fd_ln_real_gas_producer_p, fd_ln_real_gas_tax_all, fd_real_oilprice,
+         fd_ln_realinc_percapita, fd_budget_surplus, fd_urbanization, year)
 gas_data_supply <- gas_data_supply[complete.cases(gas_data_supply),]  
 fd_ln_q_supply <- as.vector(gas_data_supply$fd_ln_q_percapita)
 year_supply <- as.vector(gas_data_supply$year)
-state_supply <- as.vector(gas_data_supply$state_num)
 endo_supply <- as.vector(gas_data_supply$fd_ln_real_gas_producer_p)
 controls_supply <- cbind(gas_data_supply$fd_ln_realinc_percapita, gas_data_supply$fd_urbanization)
-colnames(controls_supply) = c("fd_ln_realinc_percapita", "fd_urbanization")
+colnames(controls_supply) <- c("fd_ln_realinc_percapita","fd_urbanization")
 instruments_supply <- as.vector(gas_data_supply$fd_ln_real_gas_tax_all)
 
 gas_data_demand <- gas_data %>%
-  select(fd_ln_q_percapita, fd_ln_real_gas_p, fd_ln_real_gas_tax_all, 
-         fd_ln_realinc_percapita, fd_urbanization, year, state_num)
+  select(fd_ln_q_percapita, fd_ln_real_gas_p, fd_ln_real_gas_tax_all, fd_real_oilprice, 
+         fd_ln_realinc_percapita, fd_budget_surplus, fd_urbanization, year)
 gas_data_demand <- gas_data_demand[complete.cases(gas_data_demand),]
 fd_ln_q_demand <- as.vector(gas_data_demand$fd_ln_q_percapita)
 year_demand <- as.vector(gas_data_demand$year)
-state_demand <- as.vector(gas_data_demand$state_num)
 endo_demand <- as.vector(gas_data_demand$fd_ln_real_gas_p)
 controls_demand <- cbind(gas_data_demand$fd_ln_realinc_percapita, gas_data_demand$fd_urbanization)
-colnames(controls_demand) = c("fd_ln_realinc_percapita", "fd_urbanization")
+colnames(controls_demand) <- c("fd_ln_realinc_percapita","fd_urbanization")
 instruments_demand <- as.vector(gas_data_demand$fd_ln_real_gas_tax_all)

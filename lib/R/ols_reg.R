@@ -1,6 +1,6 @@
 #### OLS regression with constant, up to two-way fixed effects, and option for robust standard errors
 
-ols_reg <- function (y, X = NULL, factor_var1 = NULL, factor_var2 = NULL, robust = FALSE) {
+ols_reg <- function (y, X = NULL, incl_const = TRUE, factor_var1 = NULL, factor_var2 = NULL, robust = FALSE) {
   outcome.assertion <- is.vector(y)
   controls.assertion <- (is.matrix(X) | is.vector(X) | is.null(X))
   
@@ -10,15 +10,17 @@ ols_reg <- function (y, X = NULL, factor_var1 = NULL, factor_var2 = NULL, robust
     }
 
   nbr_obs_y <- length(y)
-
-  cons <- rep(1,nbr_obs_y)
-  
-  if (is.null(X) == TRUE) {
-    X = cons
-  }
-  else{
-    X <- cbind(X, cons)
-  }
+  if (incl_const == TRUE) {
+    cons <- rep(1,nbr_obs_y)
+  } else {
+    cons <- NULL
+    if (is.null(X) == TRUE) {
+      print("Regressor set cannot be empty")
+      break  
+    }
+  } 
+    
+  X <- cbind(cons, X)
   
   if (is.null(factor_var1) == FALSE){
     factor1.vector.assertion <- is.vector(factor_var1)
