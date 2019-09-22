@@ -31,7 +31,7 @@ knitr::opts_chunk$set(echo = TRUE)
   source("preclean.R")
 ```
 
-### Gasoline exercise
+### 1) Gasoline
 
 The unit of observation of the data is year-state. When I refer to gas prices or gas taxes, I measure them in real dollars per gallon with base 1987. When I talk about gas quantities, I am measuring them in gallons per capita in a given year-state.
 
@@ -402,3 +402,98 @@ However, if multiplying the weird years by $100$ we get:
                              TRUE ~ unemployment))
   ggplot(data = ri_unemp_fix, aes(y = unemployment, x = year)) + geom_line()
 ```
+
+### 2) Newspaper
+
+I will assume that the monopolist faces a constant variable cost (per unit produced), and that it maximizes static profits. Whenever I refer to prices or costs I do so in dollars.
+
+## a) A regulator forces the newspaper to lower its price by 1%. How many daily readers will the newspaper gain?
+
+The monopolist chooses a price according to the problem given by:
+
+\[P^M = argmax_P \ PQ(P) - cQ(P) - F = argmax_P \ \Pi(P)\]
+
+Where $Q(P)$ is the demand function, $c$ is the constant variable cost, and $F$ is the fixed net cost. Assuming that an interior solution exists, a necessary condition for a maximum is the first order condition given by:
+
+\[Q(P) + PQ'(P) - cQ'(P) = 0 \to (P-c)Q'(P) + Q(P) = 0\]
+
+A sufficient condition for a maximum is given by:
+
+\[Q'(P) + Q'(P) + PQ''(P) - cQ''(P) \leq 0 \to (P-c)Q''(P) + 2Q'(P) \leq 0\]
+
+Let's assume that the solution is interior and that the demand function is such that the sufficient condition holds. Then, the FOC characterizes $P^M$. Divinding the FOC by $P^M$ and re-arranging we can write:
+
+\[\frac{P^M-C}{P^M} = -\frac{Q(P^M)}{P^M}\frac{1}{Q'(P^M)}\]
+
+But now note that the price elasticity of demand at any $P$ is given by:
+
+\[\eta(P) = Q'(P)\frac{1}{Q(P)}\]
+
+So that we can write the following equality, which hereafter we refer as *(1)*:
+
+\[\frac{P^M-C}{P^M} = -\frac{1}{\eta(P^M)}\]
+
+Now from the data we can construct $P^M$ and $c$, so using *(1)* we can recover $\eta(P^M)$ and answer the question. In the excel provided I specify for both revenue and costs which categories I consider fixed and which I consider variable. An important note, is that it is probably a good idea to consider advertisement as fixed, as we are analyzing a small change in price. Obviously, advertisement must be an increasing function of the nmumber of subscribers, however, seems reasonable to think that for a small change around the actual number of subscribers the advertisement level is fixed. Once that is done, to obtain the monopoly price and the constant variable cost from the data we just compute:
+
+\[P^M = \frac{variable \ revenue}{\# subscribers}\]
+
+and 
+
+\[c = \frac{variable \ cost}{\# subscribers}\]
+
+I got $P^M = 13.76$, $c = 5.97$ and using *(1)* I recovered $\eta(P^M) = -1.77$. At the maximizer the profits made by the monopolist are $\Pi(P^M) = 186486$.
+Now, if a regulator forces the monopolist to lower its price by $1\%$ (which implies a new price of $13.62$), the number of subscribers will be $1.77\%$ higher. That corresponds roughly to an increase of 883 subscribers.
+
+## b) How much (in dollars) will the newspaper gain or lose in profits as a result of the regulation?
+
+Define $P^R$ as the new price imposed by the regulator. Then, we can compute the change in profits as follows:
+
+\[\Delta\Pi = \Pi(P^R) - \Pi(P^M)\]
+
+The only number missing with respect to part *a)* is the new monopolist profits after being forced to lower the price. That is:
+
+\[\Pi(P^R) = P^RQ(P^R) - cQ(P^R) - F \]
+
+I did the computations in excel and the change in profits $\Delta\Pi = -124.56$. This is a very small change, as:
+
+\[\frac{\Delta \Pi}{Pi(P^M)} = \frac{-124.56}{186486} = -0.000667953\]
+
+
+Roughly a decrease of only $0.007\%$. This makes sense because a monopolist maximizes profits (if the maximization is well defined) in the elastic part of the demand, so that if a regulator forces a price change the monopolist can compensate losses by in creasing quantity. 
+
+## c) How much (in dollars) will the regulation increase or decrease the total surplus created by the market for this newspaper?
+
+Start by noting that the total surplus at a given $P$ $TS(P)$ is given by:
+
+\[TS(P) = \Pi(P) + CS(P)\]
+
+Then, if we want to know $\Delta TS$ given by the new regulation we need to compute $\Delta \Pi$ and $\Delta CS$. The first we just computed. The second, is easy to compute if we assume that the demand is isoelastic (though there are other ways to do so). Namely, that $\eta(P) = \eta \ \forall P$. WIth that assumption we get that:
+
+\[Q(P) = A P^\eta\]
+
+For some constant $A$. But note that we can compute $A$ through:
+
+\[A = \frac{Q(P^M)}{{P^M}^\eta}\]
+ 
+ Which are known quantities. In excel I obtained that $A = 5135489.944$. With that in hand we can compute the following:
+ 
+ \[\Delta CS = \int_{P^R}^{P^M} Q(P)dP = \int_{P^R}^{P^M}A P^\eta dP = A \Big[\frac{{P^M}^{\eta+1}}{\eta +1} - \frac{{P^R}^{\eta+1}}{\eta +1} \Big] = \frac{A}{\eta+1} [{P^M}^{\eta+1} - {P^R}^{\eta+1}]\]
+
+In excel I obtained that $\Delta CS = 6940.55$. Therefore, we have that $\Delta TS = \Delta \Pi + \Delta CS = -124.56 + 6940.55 = 6815.99$. It makes sense that this is economically big because elasticity of demand is quite high and we are getting closer to a competitive market.
+
+## d) How much profit (in dollars) would the newspaper lose if the government were instead to impose a 1% tax on its profit? What is the impact on total surplus?
+
+Define $P^t$ as the price that the monopolist would chose in a situation with a percentage tax on profits. The monopolist would then solve the following:
+
+\[P^t = argmax_P \  \Pi(t,P) = argmax_P \ (1-t) \Big[ (P-C)Q(P) - F\Big]\]
+
+Where $t$ is the tax rate. Start by noting that this new problem is well defined under the same conditions as the problem in *a)*. Now, note that the FOC is exactly the same as in *a)*. Therefore, we have that $P^t = P^M$, and so the number of subscribers is the same as before the tax imposition. This implies automatically that the consumer surplus is exactly the same with and without the tax. Also, note that this tax will reduce the net profits of the monopolist by $1\%$, which corresponds to $1864.86$ less profits. However, the tax revenue will go to the government so that it is not lost. Therefore, the change in total surplus is exactly 0.
+
+## e) How much profit would the newspaper lose if 1% of the local population were to emigrate (and demand were to decrease proportionally)? Is this better or worse for the newspaper than the profit tax?
+
+Define $P^n$ as the price that the monopolist would chose in a situation with emigration given by $n\%$ of the population such that the demand decreases proportionally. The monopolist would then solve the following:
+
+\[P^n = argmax_P \  \Pi(n,P) = argmax_P \ (1-n)(P-C)Q(P) - F\]
+
+Where $n$ is the fraction of the population that emigrated. Again, start by noting that this new problem is well defined under the same conditions as the problem in *a)*. Now, note once again that the FOC is exactly the same as in *a)*. Therefore, we have that $P^n = P^M$, and so the number of subscribers is the same as before the migration. This implies automatically that the consumer surplus is exactly the same with and without the migration. However, now the monopolist makes less profits because it has less subscribers as the demand faced is scaled by $(1-n)$. the new profits (computed in excel) are $\Pi(n, P^n) = 182592.38$. This situation, for the monopolist, in this particular case is worst than the tax on profits. However, this is more general: it is true so long as the net fixed costs are positive. This is because, the monopolist could deduct the fixed cost from the profits, and therefore from the taxes. However, the emigration reduces only the quantity demanded but nothing else. 
+
