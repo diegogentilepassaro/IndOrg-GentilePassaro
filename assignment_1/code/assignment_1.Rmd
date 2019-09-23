@@ -4,6 +4,8 @@ output: pdf_document
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 knit: (function(inputFile, encoding) { 
       out_dir <- '../output';
+      intermediates_dir <- '../output';
+      clean <- TRUE;
       rmarkdown::render(inputFile,
                         encoding=encoding, 
                         output_file=file.path(dirname(inputFile), 
@@ -11,8 +13,9 @@ knit: (function(inputFile, encoding) {
 header-includes: 
   - \usepackage{tikz}
   - \usepackage{pgfplots}
-  -  \usepackage{float}
+  - \usepackage{float}
   - \floatplacement{figure}{H}
+  - \pgfplotsset{compat=1.16}
 ---
 
 ```{r setup, include=FALSE}
@@ -27,7 +30,7 @@ library(lfe)
 source("../../lib/R/ols_reg.R")
 source("../../lib/R/iv_reg.R")
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(fig.width=12, fig.height=8) 
+knitr::opts_chunk$set(fig.width=12, fig.height=8)
 ```
 
 ```{r preclean, echo=FALSE}
@@ -54,7 +57,7 @@ Namely that the producer price is the price paid by the consumers minus the tota
 
 Where $X'_{jt}$ is a vector of supply related controls, and where $\eta_j$ and $\eta_t$ area state and year fixed effects respectively. In this model, an estimate of $\beta$ is a direct estimate of the price elasticity of supply. However, in order to estimate $\beta$ consistently, we cannot rely on OLS using data from a perfectly competitive market. This is because, price and quantity are determined together through equating supply and demand, and therefore the real price of gasoline excluding taxes $P^S_{jt}$ is necesarilly a function of the supply shocks $\psi_{jt}$. We can use two stage least squares but we need exogenous variation (random or quasi-random) in some variable that is correlated with $P^S_{jt}$ and that causes changes on the quantities supplied only through the change in $P^S_{jt}$ that it induces. 
 
-I choose to use as an instrument the logarithm of the total real gas tax (namely, the sum of the real gas charged by the state and federal government). I include as controls the logarithm of the real income per-capita, and the urbanization rate. In this case, I think that it is important to control for income because if for some units, income per-capita and gas prices are highly correlated (for example, because a given state derives most of its income from the gas sector during the years on the data) we might think that a government trying to smooth private consumption will find it optimal to have a countercyclical tax policy in which taxes are raised when income (and gas prices) are high and in which taxes are lowered when they are low. In a case like this, controling for income generates that the identifying variation for $\beta$ comes from tax changes that ocurr within high income times and within low income times, which are unequivocaly "more" random that those tax changes that ocurr irrespectively of the income level. Controlling for income would also be crucial in a case where the government changes taxes procyclically with income, or in any other case in which we suspect that tax changes are responding both to income and price changes. On the other hand, controlling for urbanization seems to be important for explaining quantity so including it as a control will increase precision. 
+I choose to use as an instrument the logarithm of the total real gas tax (namely, the sum of the real gas charged by the state and federal government). If taxes were changed randomly by the observed units, each change would increase or decrease the wedge between the consumer and producer price, but the supply and demand curves would not be moving. Therefore, if we believe that taxes are changed "randomly" (at least conditional on our controls) we can use the logrithm of taxes as an instrument to identify both supply and demand. I include as controls the logarithm of the real income per-capita, and the urbanization rate. In this case, I think that it is important to control for income because if for some units, income per-capita and gas prices are highly correlated (for example, because a given state derives most of its income from the gas sector during the years on the data) we might think that a government trying to smooth private consumption will find it optimal to have a countercyclical tax policy in which taxes are raised when income (and gas prices) are high and in which taxes are lowered when they are low. In a case like this, controling for income generates that the identifying variation for $\beta$ comes from tax changes that ocurr within high income times and within low income times, which are unequivocaly "more" random that those tax changes that ocurr irrespectively of the income level. Controlling for income would also be crucial in a case where the government changes taxes procyclically with income, or in any other case in which we suspect that tax changes are responding both to income and price changes. On the other hand, controlling for urbanization seems to be important for explaining quantity so including it as a control will increase precision. 
 
 Also, given that the data has a panel structure, for a given state the gas prices including taxes for two consecutive years are extremely correlated. Therefore, in order to identify $\beta$, partialling out the autocorrelation (in the spirit of Nerlove) we can first difference the model above to get:
 
@@ -132,7 +135,8 @@ Where $\eta$ is the elasticity of demand and for some constant $B_{jt}$ that we 
 
 \[\ln(Q^D_{jt}) = \omega + \eta \ln(P^D_{jt}) + X'_{jt} + \eta_j + \eta_t + \psi^D_{jt}\]
 
-Were the controls are the same as in *a)*. Again, first differencing the model as explained in *a)*, we can obtain an estimate for $\eta$, the elasticity of demand.
+Were the instrument and the controls are the same as in *a)*. Note that, using the total real gas tax as instrument in this case is also a good idea, as I think that it is a plausible assumption that conditional on income the tax is "as good as random" for the reasons explained in *a)*.
+Again, first differencing the model as explained in *a)*, we can obtain an estimate for $\eta$, the elasticity of demand.
 
 Below, the first stage regression output (ommitting coefficients for the year fixed effects). 
 
@@ -203,7 +207,7 @@ I plot the year fixed effects of the supply model in first differences that corr
 
 \[(\eta_t - \eta_{t-1})\]
 
-which is exactly the change from one year to another in the amount of gasoline that would be supplied at a given price. Below the plot. 
+which is exactly the change from one year to another in the amount of gasoline that would be supplied at a given price, as they are in units of a difference in logarithms. Below the plot. 
 
 ```{r supply_shocks, echo = FALSE}
   supply_shock_data <- data.frame(var = row.names(iv_estimate_supply_model$summary), 
