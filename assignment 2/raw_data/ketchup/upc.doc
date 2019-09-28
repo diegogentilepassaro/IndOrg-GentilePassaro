@@ -1,0 +1,33 @@
+       Documentation for the A C Nielsen UPC Data File
+       ***********************************************
+
+	The following is documentation of the SAS version of A C
+Nielsens UPC data file.  The files are referred to as XXXX_UPC.SSD,
+where XXXX stands for the product category abbreviation.
+e.g. tiss_upc.ssd is the upc data file for the tissue category
+
+ Variable	Type	Length			Description
+ ********	****	******		***************************
+
+1. UPC 		num	  8		UPC Number
+
+2. DESC		char	  30		Description for upc, including
+					  flavor, format, brand, cents
+					  off, etc.
+
+3. WCODE	char	  4		When appropriate, used in
+					  combination with weight
+					  description to further define
+					  the volume (i.e. GR OZ versus 
+					  ML OZ )
+
+4. WDESC	char	  10		Primary volume description
+
+5. WAMT		num	  4		Primary volume
+
+6. MPACK	num	  4		Multipack.  Number of individual
+					  units packaged as a single entity.
+
+7. EQV		num	  4		Equivalency factor for converting
+					  to secondary volume.
+

@@ -10,3 +10,4 @@ draft/
 *.Rapp.history
 .Rproj.user
 .Rproj.user/
+.DS_Store

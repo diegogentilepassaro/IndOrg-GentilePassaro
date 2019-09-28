@@ -1,0 +1,83 @@
+Documentation for the A C Nielsen Household Purchase History Files (HP files)
+*****************************************************************************
+
+	The HP files are SAS versions of the A C Nielsen Household Purchase
+History files.  The following is a description of the variables contained in
+these files.  HP1.SSD (or HP2.SSD) refers to the Nielsen market number one
+(or two).
+
+
+  Variable	Type	Length			Description
+  ********	****	******		***************************
+
+1. Major	num	  3 		Indicator for major advertisment
+
+2. Line		num	  3		Indicator for line advertisment
+
+3. Advert	num	  3		Indicator for in-store advertisment
+
+4. Display	num	  3		Indicator for in-store display
+
+5. Cellid	num	  3		Cell Identifier
+
+6. Market	num	  3		ERIM market
+
+7. Trip		num	  3		Trip number for specific ERIM day
+
+8. Id		num	  4		Household identification number
+
+9. Upc		num	  6		Upc number
+
+10. Sid		num	  3		Store identification number
+
+11. Stype	num	  3		Store type (1=grocery, 2=drug)
+
+12. Units	num	  4		Total units purchased
+
+13. Price	num	  4		Price per item, before coupons
+
+14. Weight	num	  4		Unit weight (primary volume)
+
+15. Scc		num	  3		Special coupon code, used to track
+					test coupons
+
+16. Scunits	num	  3		Total units purchased on store coupons
+
+17. Scval	num	  4		Total value of store coupons
+
+18. Mcunits	num	  3		Total units purchased on manufacturer
+					coupons
+
+19. Mcval	num	  4		Total value of manufacturer coupons
+
+20. Eqv		num	  6		Equivalency factor for converting
+					to secondary volume
+
+21. Endd	char	  1		End aisle display code ( Y or N )
+
+22. Frontd	char	  1		Front aisle display code ( Y or N )
+
+23. Ind		char	  1		In-aisle diplay code ( Y or N )
+
+24. Otherd	char 	  1		Other display code ( Y or N )
+
+25. Adcode	char	  1		Advertising code ( Y or N )
+
+26. Adtype	char	  1		Ad type (L=line, M=major, blank=none)
+
+27. Inadcc	char	  1		In-ad coupon code ( Y or N )
+
+28. Pop		char 	  1		Point-of-purchase code ( Y or N )
+
+29. Spc		char	  1		Special price code ( Y or N)
+
+30. Coupfac	char	  1		Coupon factor
+					(1=single, 2=double, 3=triple)
+
+31. Date	num	  6		Date in SAS format ( i.e. number of
+					days since January 1, 1960)
+
+32. Chain	num	  4		Store chain number
+
+33. Vol 	num	  8		Volume (=units*weight*eqv)
+		 
