@@ -1,0 +1,510 @@
+---
+title: "Assignment_1"
+output: pdf_document
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+knit: (function(inputFile, encoding) { 
+      out_dir <- '../output';
+      intermediates_dir <- '../output';
+      clean <- TRUE;
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=file.path(dirname(inputFile), 
+                        out_dir, 'assignment_1.pdf')) })
+header-includes: 
+  - \usepackage{tikz}
+  - \usepackage{pgfplots}
+  - \usepackage{float}
+  - \floatplacement{figure}{H}
+  - \pgfplotsset{compat=1.16}
+---
+
+```{r setup, include=FALSE}
+library(tibble)
+library(ggplot2)
+library(dplyr)
+library(haven)
+library(moderndive)
+library(broom)
+library(lfe)
+
+source("../../lib/R/ols_reg.R")
+source("../../lib/R/iv_reg.R")
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=8)
+```
+
+```{r preclean, echo=FALSE}
+  source("preclean.R")
+```
+
+### 1) Gasoline
+
+The unit of observation of the data is year-state. When I refer to gas prices or gas taxes, I measure them in real dollars per gallon with base 1987. When I talk about gas quantities, I am measuring them in gallons per capita.
+
+## a) Estimate the elasticity of supply of gasoline. Provide a confidence interval. Can you reject the hypothesis that the supply of gasoline is elastic?
+
+In this part, our aim is to estimate $\beta = \frac{\partial Q_{jt}}{\partial P^S_{jt}} \frac{P^S_{jt}}{Q_{jt}}$. Where $Q$ is the highway gasoline consumption per capita, $P^S$ is the real price of gasoline excluding taxes, and $j,t$ index state and year respectively. If we assume that the elasticity of supply is constant over time and across states, we are basically assuming that:
+
+\[Q^S_{jt}(P^s_{jt}) = A_{jt} {P^S_{jt}}^{\beta}\]
+
+For some constant $A_{jt}$ that we allow to change flexible by year, state (and also depending on covariates). Note that:
+
+\[P^S = P^D - t\]
+
+Namely that the producer price is the price paid by the consumers minus the total taxes (federal and state). With the data provided we can run a model like:
+
+\[\ln(Q^S_{jt}) = \alpha + \beta \ln(P^S_{jt}) + X'_{jt}\gamma + \eta_j + \eta_t + \psi^S_{jt}\]
+
+Where $X'_{jt}$ is a vector of supply related controls, and where $\eta_j$ and $\eta_t$ area state and year fixed effects respectively. In this model, an estimate of $\beta$ is a direct estimate of the price elasticity of supply. However, in order to estimate $\beta$ consistently, we cannot rely on OLS using data from a perfectly competitive market. This is because, price and quantity are determined together through equating supply and demand, and therefore the real price of gasoline excluding taxes $P^S_{jt}$ is necesarilly a function of the supply shocks $\psi_{jt}$. We can use two stage least squares but we need exogenous variation (random or quasi-random) in some variable that is correlated with $P^S_{jt}$ and that causes changes on the quantities supplied only through the change in $P^S_{jt}$ that it induces. 
+
+I choose to use as an instrument the logarithm of the total real gas tax (namely, the sum of the real gas charged by the state and federal government). If taxes were changed randomly by the observed units, each change would increase or decrease the wedge between the consumer and producer price, but the supply and demand curves would not be moving. Therefore, if we believe that taxes are changed "randomly" (at least conditional on our controls) we can use the logrithm of taxes as an instrument to identify both supply and demand. I include as controls the logarithm of the real income per-capita, and the urbanization rate. In this case, I think that it is important to control for income because if for some units, income per-capita and gas prices are highly correlated (for example, because a given state derives most of its income from the gas sector during the years on the data) we might think that a government trying to smooth private consumption will find it optimal to have a countercyclical tax policy in which taxes are raised when income (and gas prices) are high and in which taxes are lowered when they are low. In a case like this, controling for income generates that the identifying variation for $\beta$ comes from tax changes that ocurr within high income times and within low income times, which are unequivocaly "more" random that those tax changes that ocurr irrespectively of the income level. Controlling for income would also be crucial in a case where the government changes taxes procyclically with income, or in any other case in which we suspect that tax changes are responding both to income and price changes. On the other hand, controlling for urbanization seems to be important for explaining quantity so including it as a control will increase precision. 
+
+Also, given that the data has a panel structure, for a given state the gas prices including taxes for two consecutive years are extremely correlated. Therefore, in order to identify $\beta$, partialling out the autocorrelation (in the spirit of Nerlove) we can first difference the model above to get:
+
+\[\ln(Q^S_{jt}) - \ln(Q^S_{jt-1}) = \beta (\ln(P^S_{jt}) - \ln(P^S_{jt-1})) + (X'_{jt} - X'_{jt-1})\gamma + (\eta_t - \eta_{t-1}) + (\psi^S_{jt} - \psi^S_{jt-1})\]
+
+Where we can note that the constant and the state-fixed effects are not identified anymore, but we can still recover the $\beta$ from the originbal model. This first-differenced model is the one that I will present results for. 
+
+Below, I first present the first stage regression output (ommitting coefficients for the year fixed effects). 
+
+```{r supply_fs, echo=FALSE}
+  naive_supply_model <- ols_reg(y = fd_ln_q_supply, X = cbind(endo_supply, controls_supply), 
+                                    factor_var1 =  year_supply, incl_cons = FALSE)
+  
+  iv_estimate_supply_model <- iv_reg(y = fd_ln_q_supply, X = controls_supply, 
+                                     endo = endo_supply, instr = instruments_supply, 
+                                     factor_var1 = year_supply, incl_cons = FALSE)
+  supply_model_fs_data <- data.frame(var = 
+                                     row.names(iv_estimate_supply_model$summary_fs), 
+                                     iv_estimate_supply_model$summary_fs)
+  supply_model_fs_data[1:4, c("beta_fs", "se_beta_fs", "t_stat_fs")]
+  F_stat_instr_supply <- as.numeric(supply_model_fs_data[1,"t_stat_fs"])^2
+  print(paste("F-stat of instruments in first stage is:", F_stat_instr_supply))
+```
+
+The instrument is quite strong, as implied by the reported F-stat. The output of the second stage regression (again omitting year fixed effects coefficients) is below. A $95\%$ confidence interval is constructed using:
+
+\[CI(\beta) = [\beta - 1.96*se(\beta), \beta + 1.96*se(\beta)] \]
+
+```{r supply_second_stage, echo=FALSE}
+  supply_model_data <- data.frame(var = row.names(iv_estimate_supply_model$summary), 
+                                  iv_estimate_supply_model$summary)
+  supply_model_data[1:4, c("beta", "se_beta", "t_stat")]
+  supply_elasticity <- as.numeric(supply_model_data %>%
+    filter(stringr::str_detect(var, "endo_supply")) %>%
+    select(beta))
+  supply_elasticity_se <- as.numeric(supply_model_data %>%
+    filter(stringr::str_detect(var, "endo_supply")) %>%
+    select(se_beta)) 
+  print(paste("The estimated supply elasticity is:", supply_elasticity))
+  supply_ci_upper <- supply_elasticity + supply_elasticity_se*1.96
+  supply_ci_lower <- supply_elasticity - supply_elasticity_se*1.96
+  print(paste0("The 95% confidence interval is: [", supply_ci_lower, ", ", 
+               supply_ci_upper, "]"))
+```
+
+A $95\%$ one-tailed t-test to see if we can reject supply elasticity being greater than 1 (so being elastic) is performed computing the following statistic:
+
+\[t = \frac{\beta -1}{se(\beta)}\]
+
+```{r elastic_supply_test, echo = FALSE}
+  df_supply_model <- iv_estimate_supply_model$df 
+  t_test_supply_elastic = (supply_elasticity - 1)/supply_elasticity_se
+  critical_value_elastic_supply <- qt(p = 0.05, df = df_supply_model)
+  
+  if (abs(t_test_supply_elastic) >= abs(critical_value_elastic_supply)) {
+    print(paste("The t-stat is:", t_test_supply_elastic))
+    print(paste("The critical value is:", critical_value_elastic_supply))
+    print("As, |t_stat| >= |critical value|, we can reject the hypothesis that supply is elastic")
+  } else {
+    print(paste("The t-stat is:", t_test_supply_elastic))
+    print(paste("The critical value is:", critical_value_elastic_supply))
+    print("We can't reject hypothesis that supply is elastic")
+  }
+```
+
+The critical value was computed using the degress of freedom given by the number of observations minus the number of regressors. As shown above we can reject that supply elasticity is elastic. 
+
+## b) Estimate the elasticity of demand of gasoline. Provide a confidence interval. Can you reject the hypothesis that the demand of gasoline is elastic?
+
+We proceed exactly as in part *a)*, with the exception that now we use the price paid by the consumers $P^D$ instead of the producer's price $P^S$. Our assumptions now mean that:
+
+\[Q^D_{jt}(P^s_{jt}) = B_{jt} {P^D_{jt}}^{\eta}\]
+
+Where $\eta$ is the elasticity of demand and for some constant $B_{jt}$ that we allow to change flexible by year, state (and also the covariates explained in *a)*). We want to ran the following model:
+
+\[\ln(Q^D_{jt}) = \omega + \eta \ln(P^D_{jt}) + X'_{jt} + \eta_j + \eta_t + \psi^D_{jt}\]
+
+Were the instrument and the controls are the same as in *a)*. Note that, using the total real gas tax as instrument in this case is also a good idea, as I think that it is a plausible assumption that conditional on income the tax is "as good as random" for the reasons explained in *a)*.
+Again, first differencing the model as explained in *a)*, we can obtain an estimate for $\eta$, the elasticity of demand.
+
+Below, the first stage regression output (ommitting coefficients for the year fixed effects). 
+
+```{r demand_fs, echo=FALSE}
+  naive_demand_model <- ols_reg(y = fd_ln_q_demand, X = cbind(endo_demand, controls_demand), 
+                              factor_var1 =  year_demand, incl_cons = FALSE)
+  
+  iv_estimate_demand_model <- iv_reg(y = fd_ln_q_demand, X = controls_demand, 
+                                     endo = endo_demand, instr = instruments_demand,
+                                     factor_var1 =  year_demand, incl_cons = FALSE)
+  
+  demand_model_fs_data <- data.frame(var = 
+                                     row.names(iv_estimate_demand_model$summary_fs), 
+                                     iv_estimate_demand_model$summary_fs)
+  demand_model_fs_data[1:4, c("beta_fs", "se_beta_fs", "t_stat_fs")]
+  F_stat_instr_demand <- as.numeric(demand_model_fs_data[1,"t_stat_fs"])^2
+  print(paste("F-stat of instruments in first stage is:", F_stat_instr_demand)) 
+```
+
+The instrument is even stronger now, as implied by the reported F-stat. The output of the second stage regression (again omitting year fixed effects), and the confidence interval computed as explained before, are below.
+
+```{r demand_second_stage, echo=FALSE}
+  demand_model_data <- data.frame(var = row.names(iv_estimate_demand_model$summary), 
+                                  iv_estimate_demand_model$summary)
+  demand_model_data[1:4, c("beta", "se_beta", "t_stat")]
+  demand_elasticity <- as.numeric(demand_model_data %>%
+    filter(stringr::str_detect(var, "endo_demand")) %>%
+    select(beta))
+  demand_elasticity_se <- as.numeric(demand_model_data %>%
+    filter(stringr::str_detect(var, "endo_demand")) %>%
+    select(se_beta)) 
+  print(paste("The estimated demand elasticity is:", demand_elasticity))
+  demand_ci_upper <- demand_elasticity + demand_elasticity_se*1.96
+  demand_ci_lower <- demand_elasticity - demand_elasticity_se*1.96
+  print(paste0("The 95% confidence interval is: [", demand_ci_lower, ", ", 
+               demand_ci_upper, "]"))
+```
+
+As in *a)*, the $95\%$ confidence interval is constructed using:
+
+\[CI(\eta) = [\eta - 1.96*se(\eta), \eta + 1.96*se(\eta)]\]
+
+A $95\%$ one-tailed t-test to see if we can reject demand elasticity being greater than -1 (so being elastic) is performed computing the following statistic:
+
+\[t = \frac{\eta - (-1)}{se(\eta)}\]
+
+```{r elastic_demand_test, echo = FALSE}
+  df_demand_model <- iv_estimate_demand_model$df 
+  t_test_demand_elastic = (demand_elasticity - (-1))/demand_elasticity_se
+  critical_value_elastic_demand <- qt(p = 0.95, df = df_demand_model)
+  
+  if (abs(t_test_demand_elastic) >= abs(critical_value_elastic_demand)) {
+    print(paste("The t-stat is:", t_test_demand_elastic))
+    print(paste("The critical value is:", critical_value_elastic_demand))
+    print("As, |t_stat| >= |critical value|, we can reject hypothesis that demand is elastic")
+  } else {
+    print(paste("The t-stat is:", t_test_demand_elastic))
+    print(paste("The critical value is:", critical_value_elastic_demand))
+    print("Can't reject hypothesis that demand is elastic")
+  }
+```
+
+As shown above we can reject that demand elasticity is elastic. 
+
+## c) A supply shock is a change from one year to the next in the amount of gasoline that would be supplied at a given price. According to your analysis, in what years did the US experience the most negative shock to the supply of gasoline? Why?
+
+I plot the year fixed effects of the supply model in first differences that corresponds to:
+
+\[(\eta_t - \eta_{t-1})\]
+
+which is exactly the change from one year to another in the amount of gasoline that would be supplied at a given price, as they are in units of a difference in logarithms. Below the plot. 
+
+```{r supply_shocks, echo = FALSE}
+  supply_shock_data <- data.frame(var = row.names(iv_estimate_supply_model$summary), 
+                                  iv_estimate_supply_model$summary)
+  supply_shock_data <- supply_shock_data %>%
+    filter(stringr::str_detect(var, "year")) %>%
+    mutate(year = substring(var, -4)) %>%
+    select(year, beta)
+  
+  ggplot(data = supply_shock_data, aes(y = beta, x = year)) + geom_line(group = 1) +
+    xlab("Year") + ylab("Year FE") + 
+    theme(axis.text.x=element_text(angle=90,vjust=0.5,hjust=1))
+```
+
+As shown above the most negative shock is in the year 2000, though the one in the year 1980 comes really close and corresponds to the 1979-1980 oil crisis, in which the price of oil increased a 100\% in a few months. I am not sure what to make out of the year 2000 negative shock, but refer to answer to question *e)* for a more satistfactory explanation of what might be going on.
+
+## d) In what year after 2000 did the US experience the most negative shock to the supply of gasoline? Why?
+
+It seems that the most negative shock after the year 2000 is in the year 2005. This is probably due to Hurricane Katrina, that ocurred in August 2005, and according to Wikipedia it damaged or destroyed 30 oil platforms and caused the closure of nine refineries.
+
+## e) A demand shock is a change from one year to the next in the amount of gasoline that would be demanded at a given price. Examine the shocks to US gasoline demand over time as implied by your analysis. Is there any pattern that you can discern that explains when the shocks tend to be negative?
+
+By the same reason expressed in *c)* I plot the year fixed effects from the demand model.
+
+```{r demand_shocks, echo = FALSE}
+  demand_shock_data <- data.frame(var = row.names(iv_estimate_demand_model$summary), 
+                                  iv_estimate_demand_model$summary)
+  demand_shock_data <- demand_shock_data %>%
+    filter(stringr::str_detect(var, "year")) %>%
+    mutate(year = substring(var, -4)) %>%
+    select(year, beta)
+  
+  ggplot(data = demand_shock_data, aes(y = beta, x = year)) + geom_line(group = 1) +
+    xlab("Year") + ylab("Year FE") + 
+    theme(axis.text.x=element_text(angle=90,vjust=0.5,hjust=1))
+```
+
+The negative shocks to demand seem to be correlated when times of economic downturn. For example, from July 1981 to November 1982 the US was in recession with the GDP contracting 2.7\% coinciding with a very negative demand shock. The same is true for 1990 and 1991 when there was a short recession, and for the year 2001 when both the dot com bubble exploded and 9/11 happened. It is a little weird that the most negative demand shock happened in 1986, but clearly the model could be improved by controlling for other important variables to increase precision. One indication that I probably should control for more things is that the first differenced year fixed effects tend to be more negative than positive, suggesting that the shocks also contain some systematic component).
+
+## f) Suppose that Rhode Island had declared a gasoline tax holiday in 2008, rebating the full value of all state and federal gasoline taxes. According to your analysis, what would have been the price of gasoline in that year? The quantity of gasoline?
+
+As we assumed that the demand is isoelastic we have that for any given year-state:
+
+\[Q^D_{jt} = A_{jt} {P^D_{jt}}^{\eta}\]
+
+and the same is true for the isoelastic supply:
+
+\[Q^S_{jt} = B_{jt} {P^S_{jt}}^{\beta}\]
+
+Now, we can use the data from RI in 2008, to get the value of A and B. Note that:
+
+\[A = \frac{Q^D}{{P^D}^\eta}\]
+
+and 
+
+\[B = \frac{Q^S}{{P^S}^\beta}\]
+
+Finally, we can equate the supply and demand equations and use the fact that $P^D = P^S$ without the tax so that we get the expression:
+
+\[P^* = \frac{A}{B}^{\frac{1}{\beta-\eta}}\]
+
+The new quantity can be recovered from plugging $P^*$ in either the supply or demand equation. Below I implement this in code.
+
+
+```{r tax_holiday}
+  ri_2008_data <- gas_data %>%
+    filter(state == "Rhode Island", year == 2008)
+  
+  quantity <- as.numeric(ri_2008_data %>%
+                           mutate(quantity = exp(ln_q_percapita)) %>%
+                           select(quantity))
+  demand_constant <- as.numeric(ri_2008_data %>%
+    mutate(demand_constant = (exp(ln_q_percapita))/(exp(ln_real_gas_p)^demand_elasticity)) %>%
+    select(demand_constant))
+  supply_constant <- as.numeric(ri_2008_data %>%
+                                  mutate(supply_constant = (exp(ln_q_percapita))/(exp(ln_real_gas_producer_p)^supply_elasticity))                                    %>%
+                                  select(supply_constant))
+  
+  price_producer <- as.numeric(ri_2008_data %>%
+                                  mutate(price_producer = exp(ln_real_gas_producer_p)) %>%
+                                  select(price_producer))
+  price_consumer <- as.numeric(ri_2008_data %>%
+                                 mutate(price_consumer = exp(ln_real_gas_p)) %>%
+                                 select(price_consumer))
+  total_tax <- price_consumer - price_producer
+  comp_price <- (demand_constant/supply_constant)^(1/(supply_elasticity - demand_elasticity))
+  new_quantity <- demand_constant*comp_price^demand_elasticity
+  print(paste("With tax the consumer price was: ", price_consumer))
+  print(paste("With tax the producer price was: ", price_producer))
+  print(paste("With tax the quantity traded was: ", quantity))
+  print(paste("Without the tax the competitive price is: ", comp_price))
+  print(paste("Without the tax the quantity traded is: ", new_quantity))
+  
+  if (round(new_quantity, digits = 3) ==  
+      round(supply_constant*comp_price^supply_elasticity,digits = 3)){
+    print("Celebrate: we asserted that demand equals supply")
+  }else{
+    print("Oops, demand does not equal supply")
+  }
+```
+
+
+## g) What would have been the gain in consumer surplus, producer surplus, and total surplus from the tax holiday?
+
+The gain in consumer surplus ($\Delta CS$) and producer surplus ($\Delta PS$) are given in the following figure:
+
+\begin{figure}
+\begin{tikzpicture}[scale=1]
+
+% Axis
+\draw [thick, ->] (0,0) node [below] {O} -- (0,0) -- (5.5,0) node [below] {Q};
+\draw [thick, ->] (0,0) node [below] {O} -- (0,0) -- (0,5.5) node [right] {P};
+
+% Demand and Supply Curves
+\draw plot [smooth] coordinates {(1,5) (2,3) (3,2.25) (5,1.75)};
+\draw plot [smooth] coordinates {(1,0.5) (2,2) (3,2.75) (5,3.5)};
+\node [left] at (5,1.75) {$D$};
+\node [left] at (5,4) {$S$};
+
+% Surplus lines
+\draw [thick] (0,3) -- (2,3);
+\draw [thick] (0,2) -- (2,2);
+\draw [thick] (0,2.48) -- (2.60,2.48);
+
+% Labels
+\node [left] at (0,2.48) {$P^*$};
+\node [left] at (0,3) {$P^D$};
+\node [left] at (0,2) {$P^S$};
+\node [right] at (0,2.75) {$\Delta CS$};
+\node [right] at (0,2.25) {$\Delta PS$};
+
+
+\end{tikzpicture}
+\caption{A tax holiday in RI: consumer and producer surplus gains.}
+\end{figure}
+
+The tax revenue that the governemnt lost ($-\Delta TR$) due to tax holiday is given by the rectangle marked in the following figure. Now note that the change in total surplus is given by the $DWL$ (also depicted in the following figure) as we have that:
+
+\[\Delta TS = \Delta CS + \Delta PS + \Delta TR = DWL\]
+
+\begin{figure}
+\begin{tikzpicture}[scale=1]
+
+% Axis
+\draw [thick, ->] (0,0) node [below] {O} -- (0,0) -- (5.5,0) node [below] {Q};
+\draw [thick, ->] (0,0) node [below] {O} -- (0,0) -- (0,5.5) node [right] {P};
+
+% Demand and Supply Curves
+\draw plot [smooth] coordinates {(1,5) (2,3) (3,2.25) (5,1.75)};
+\draw plot [smooth] coordinates {(1,0.5) (2,2) (3,2.75) (5,3.5)};
+\node [left] at (5,1.75) {$D$};
+\node [left] at (5,4) {$S$};
+
+% Surplus lines
+\draw [thick] (2,3) -- (2,2);
+\draw [thick] (0,3) -- (2,3);
+\draw [thick] (0,2) -- (2,2);
+
+% Labels
+\node [left] at (0,3) {$P^D$};
+\node [left] at (0,2) {$P^S$};
+\node [right] at (0,2.65) {\small $-\Delta TR$};
+\node [left] at (2.65,2.48) {\tiny $DWL$};
+
+\end{tikzpicture}
+\caption{A tax holiday in RI: government loses tax revenue, DWL arises.}
+\end{figure}
+
+In this particular case we can exactly compute exactly the numbers and that I do in the code below:
+
+```{r surpluses}
+demand <- function(x) {demand_constant*(x^(demand_elasticity))}
+supply <- function(x) {supply_constant*(x^(supply_elasticity))}
+change_cs <- integrate(demand, lower = comp_price, upper = price_consumer)$value
+print(paste("The change in consumer surplus is :", change_cs))
+change_ps <- integrate(supply, lower = price_producer, upper = comp_price)$value
+print(paste("The change in producer surplus is :", change_ps))
+gov_loss <- -quantity*(price_consumer- price_producer)
+print(paste("The change in tax revenue is :", gov_loss))
+change_ts <- change_cs + change_ps - gov_loss
+print(paste("The change in total surplus is :", change_ps))
+```
+
+## h) Suppose that Rhode Island had decided in 2008 to grant a monopoly concession to a single gasoline supplier (in addition to having a tax holiday). What would have been the price and quantity of gasoline in Rhode Island 2008?
+
+The monopolist wouldn't be able to maximize profits, as the demand curve is isoelastic with an absolute value of the elasticity of demand that is smaller than 1. The monopolist could always increase price and make more profit, so the profit maximizer price does not exist.
+
+## i) Plot the unemployment rate in Rhode Island over time. Do you notice anything odd about this series?
+The original series looks like this:
+
+```{r ri_unemp, echo = FALSE}
+  ri_unemp <- gas_data %>%
+    filter(state == "Rhode Island") %>%
+    select(year, state_num, unemployment)
+  ggplot(data = ri_unemp, aes(y = unemployment, x = year)) + geom_line()
+```
+
+However, if multiplying the weird years by $100$ we get a plot that looks way more like the real series:
+
+```{r ri_unemp_fix, echo = FALSE}  
+  ri_unemp_fix <- ri_unemp %>%
+    mutate(unemployment = case_when(year>= 1985 & year <= 2000 ~ unemployment*100,
+                             TRUE ~ unemployment))
+  ggplot(data = ri_unemp_fix, aes(y = unemployment, x = year)) + geom_line()
+```
+
+### 2) Newspaper
+
+I will assume that the monopolist faces a constant variable cost (per unit produced), and that it maximizes static profits. Whenever I refer to prices or costs I do so in dollars.
+
+## a) A regulator forces the newspaper to lower its price by 1%. How many daily readers will the newspaper gain?
+
+The monopolist chooses a price according to the problem given by:
+
+\[P^M = argmax_P \ PQ(P) - cQ(P) - F = argmax_P \ \Pi(P)\]
+
+Where $Q(P)$ is the demand function, $c$ is the constant variable cost, and $F$ is the fixed net cost. Assuming that an interior solution exists, a necessary condition for a maximum is the first order condition given by:
+
+\[Q(P) + PQ'(P) - cQ'(P) = 0 \to (P-c)Q'(P) + Q(P) = 0\]
+
+A sufficient condition for a maximum is given by:
+
+\[Q'(P) + Q'(P) + PQ''(P) - cQ''(P) \leq 0 \to (P-c)Q''(P) + 2Q'(P) \leq 0\]
+
+Let's assume that the solution is interior and that the demand function is such that the sufficient condition holds. Then, the FOC characterizes $P^M$. Divinding the FOC by $P^M$ and re-arranging we can write:
+
+\[\frac{P^M-C}{P^M} = -\frac{Q(P^M)}{P^M}\frac{1}{Q'(P^M)}\]
+
+But now note that the price elasticity of demand at any $P$ is given by:
+
+\[\eta(P) = Q'(P)\frac{1}{Q(P)}\]
+
+So that we can write the following equality, which hereafter we refer as *(1)*:
+
+\[\frac{P^M-C}{P^M} = -\frac{1}{\eta(P^M)}\]
+
+Now from the data we can construct $P^M$ and $c$, so using *(1)* we can recover $\eta(P^M)$ and answer the question. In the excel provided I specify for both revenue and costs which categories I consider fixed and which I consider variable. An important note, is that it is probably a good idea to consider advertisement as fixed, as we are analyzing a small change in price. Obviously, advertisement must be an increasing function of the number of subscribers, however, seems reasonable to think that for a small change around the actual number of subscribers the advertisement level is fixed. To obtain the monopoly price and the constant variable cost from the data we just compute:
+
+\[P^M = \frac{variable \ revenue}{\# subscribers}\]
+
+and 
+
+\[c = \frac{variable \ cost}{\# subscribers}\]
+
+I got $P^M = 13.76$, $c = 5.97$ and using *(1)* I recovered $\eta(P^M) = -1.77$. At the maximizer the profits made by the monopolist are $\Pi(P^M) = 186486$.
+Now, if a regulator forces the monopolist to lower its price by $1\%$ (which implies a new price of $13.62$), the number of subscribers will be $1.77\%$ higher. That corresponds roughly to an increase of 883 subscribers.
+
+## b) How much (in dollars) will the newspaper gain or lose in profits as a result of the regulation?
+
+Define $P^R$ as the new price imposed by the regulator. Then, we can compute the change in profits as follows:
+
+\[\Delta\Pi = \Pi(P^R) - \Pi(P^M)\]
+
+The only number missing with respect to part *a)* is the new monopolist profits after being forced to lower the price. That is:
+
+\[\Pi(P^R) = P^RQ(P^R) - cQ(P^R) - F \]
+
+I did the computations in excel and the change in profits $\Delta\Pi = -124.56$. This is a very small change, as:
+
+\[\frac{\Delta \Pi}{\Pi(P^M)} = \frac{-124.56}{186486} = -0.000667953\]
+
+
+Roughly a decrease of only $0.007\%$. This makes sense because a monopolist maximizes profits (if the maximization is well defined) in the elastic part of the demand, so that if a regulator forces a price change the monopolist can compensate losses by increasing quantity. 
+
+## c) How much (in dollars) will the regulation increase or decrease the total surplus created by the market for this newspaper?
+
+Start by noting that the total surplus at a given $P$, $TS(P)$, is given by:
+
+\[TS(P) = \Pi(P) + CS(P)\]
+
+Then, if we want to know $\Delta TS$ given by the new regulation we need to compute $\Delta \Pi$ and $\Delta CS$. The first we just computed. The second, is easy to compute if we assume that the demand is isoelastic (though there are other ways to do so). Namely, that $\eta(P) = \eta \ \forall P$. WIth that assumption we get that:
+
+\[Q(P) = A P^\eta\]
+
+For some constant $A$. But note that we can compute $A$ through:
+
+\[A = \frac{Q(P^M)}{{P^M}^\eta}\]
+ 
+ Which are known quantities. In excel I obtained that $A = 5135489.944$. With that in hand we can compute the following:
+ 
+ \[\Delta CS = \int_{P^R}^{P^M} Q(P)dP = \int_{P^R}^{P^M}A P^\eta dP = A \Big[\frac{{P^M}^{\eta+1}}{\eta +1} - \frac{{P^R}^{\eta+1}}{\eta +1} \Big] = \frac{A}{\eta+1} [{P^M}^{\eta+1} - {P^R}^{\eta+1}]\]
+
+In excel I obtained that $\Delta CS = 6940.55$. Therefore, we have that $\Delta TS = \Delta \Pi + \Delta CS = -124.56 + 6940.55 = 6815.99$. It makes sense that this is economically big because elasticity of demand is quite high and we are getting closer to a competitive market.
+
+## d) How much profit (in dollars) would the newspaper lose if the government were instead to impose a 1% tax on its profit? What is the impact on total surplus?
+
+Define $P^t$ as the price that the monopolist would chose in a situation with a percentage tax on profits. The monopolist would then solve the following:
+
+\[P^t = argmax_P \  \Pi(t,P) = argmax_P \ (1-t) \Big[ (P-C)Q(P) - F\Big]\]
+
+Where $t$ is the tax rate. Start by noting that this new problem is well defined under the same conditions as the problem in *a)*. Now, note that the FOC is exactly the same as in *a)*. Therefore, we have that $P^t = P^M$, and so the number of subscribers is the same as before the tax imposition. This implies automatically that the consumer surplus is exactly the same with and without the tax. Also, note that this tax will reduce the net profits of the monopolist by $1\%$, which corresponds to $1864.86$ less profits. However, the tax revenue will go to the government so that it is not lost. Therefore, the change in total surplus is exactly 0.
+
+## e) How much profit would the newspaper lose if 1% of the local population were to emigrate (and demand were to decrease proportionally)? Is this better or worse for the newspaper than the profit tax?
+
+Define $P^n$ as the price that the monopolist would chose in a situation with emigration given by $n\%$ of the population such that the demand decreases proportionally. The monopolist would then solve the following:
+
+\[P^n = argmax_P \  \Pi(n,P) = argmax_P \ (1-n)(P-C)Q(P) - F\]
+
+Where $n$ is the fraction of the population that emigrated. Again, start by noting that this new problem is well defined under the same conditions as the problem in *a)*. Now, note once again that the FOC is exactly the same as in *a)*. Therefore, we have that $P^n = P^M$, and the number of subscribers is just $50000*(0.99) = 49500$. Now the monopolist makes less profits because it has less subscribers as the demand faced is scaled by $(1-n)$. The new profits (computed in excel) are $\Pi(n, P^n) = 182592.38$. For the monopolist, this situation is worst than the tax on profits as it makes less profits (as we can check by comparing profits from *d)* and *e)*). However, this is more general: it is true so long as the net fixed costs are positive. This is because, the monopolist can deduct the fixed cost from the net variable revenue before getting taxed. However, the emigration reduces the quantity demanded, lowering the net variable revenue without scaling down the net fixed costs. 
+
