@@ -3,7 +3,7 @@
        log:  /Users/dgentil1/Desktop/Diego/Brown/Industrial Organization/IndOrg-G
 > entilePassaro/assignment_0/output/assignment_0.log
   log type:  text
- opened on:  25 Aug 2019, 20:44:35
+ opened on:  26 Aug 2019, 11:09:21
 (816,435 real changes made)
 (816,435 missing values generated)
 (329,509 real changes made)
@@ -92,6 +92,7 @@ Instruments:   YR20 YR21 YR22 YR23 YR24 YR25 YR26 YR27 YR28 QTR120 QTR121
        _cons |   .8830288   1.516431     0.58   0.560    -2.089136    3.855193
 ------------------------------------------------------------------------------
 (est3 stored)
+note: QTR329 dropped due to collinearity
 
 Instrumental variables (2SLS) regression          Number of obs   =    247,199
                                                   Wald chi2(12)   =     104.08
@@ -103,25 +104,25 @@ Instrumental variables (2SLS) regression          Number of obs   =    247,199
     LWKLYWGE |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
 -------------+----------------------------------------------------------------
         EDUC |   .1310424    .033356     3.93   0.000     .0656659    .1964189
-        YR20 |  -.1134064   .0709263    -1.60   0.110    -.2524193    .0256065
+        YR20 |  -.1134064   .0709263    -1.60   0.110    -.2524194    .0256065
         YR21 |  -.1081955   .0649955    -1.66   0.096    -.2355843    .0191934
-        YR22 |  -.1038731    .055718    -1.86   0.062    -.2130783    .0053321
-        YR23 |  -.0938904   .0495893    -1.89   0.058    -.1910836    .0033028
-        YR24 |  -.0806531   .0425868    -1.89   0.058    -.1641218    .0028155
-        YR25 |  -.0573876   .0337871    -1.70   0.089    -.1236091     .008834
-        YR26 |  -.0427073   .0271859    -1.57   0.116    -.0959907     .010576
-        YR27 |  -.0188155   .0175163    -1.07   0.283    -.0531469    .0155159
+        YR22 |   -.103873    .055718    -1.86   0.062    -.2130782    .0053322
+        YR23 |  -.0938903   .0495893    -1.89   0.058    -.1910835    .0033028
+        YR24 |  -.0806531   .0425868    -1.89   0.058    -.1641217    .0028156
+        YR25 |  -.0573875   .0337871    -1.70   0.089    -.1236091     .008834
+        YR26 |  -.0427073   .0271859    -1.57   0.116    -.0959906    .0105761
+        YR27 |  -.0188154   .0175163    -1.07   0.283    -.0531468     .015516
         YR28 |   .0003555   .0102908     0.03   0.972     -.019814     .020525
-        AGEQ |   .1409157   .0703864     2.00   0.045     .0029608    .2788706
-      AGEQSQ |  -.0013605   .0007873    -1.73   0.084    -.0029036    .0001826
-       _cons |   .1337391   1.652728     0.08   0.936    -3.105548    3.373026
+        AGEQ |   .1409153   .0703863     2.00   0.045     .0029606      .27887
+      AGEQSQ |  -.0013605   .0007873    -1.73   0.084    -.0029035    .0001826
+       _cons |   .1337472   1.652726     0.08   0.936    -3.105536     3.37303
 ------------------------------------------------------------------------------
 Instrumented:  EDUC
 Instruments:   YR20 YR21 YR22 YR23 YR24 YR25 YR26 YR27 YR28 AGEQ AGEQSQ
-               QTR122 QTR123 QTR124 QTR125 QTR126 QTR127 QTR128 QTR129
-               QTR220 QTR221 QTR222 QTR223 QTR224 QTR225 QTR226 QTR227
-               QTR228 QTR229 QTR320 QTR321 QTR322 QTR323 QTR324 QTR325
-               QTR326 QTR327 QTR328 QTR329
+               QTR121 QTR122 QTR123 QTR124 QTR125 QTR126 QTR127 QTR128
+               QTR129 QTR220 QTR221 QTR222 QTR223 QTR224 QTR225 QTR226
+               QTR227 QTR228 QTR229 QTR320 QTR321 QTR322 QTR323 QTR324
+               QTR325 QTR326 QTR327 QTR328
 (est4 stored)
 
       Source |       SS           df       MS      Number of obs   =   247,199
@@ -335,5 +336,5 @@ Note: dy/dx for factor levels is the discrete change from the base level.
        log:  /Users/dgentil1/Desktop/Diego/Brown/Industrial Organization/IndOrg-G
 > entilePassaro/assignment_0/output/assignment_0.log
   log type:  text
- closed on:  25 Aug 2019, 20:45:15
+ closed on:  26 Aug 2019, 11:09:59
 ---------------------------------------------------------------------------------
