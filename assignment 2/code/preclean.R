@@ -35,6 +35,7 @@ main <- function() {
   market1_data <- left_join(choices_data, brand_price_data, by = c("date", "sid", "brand"))
   market1_data <- left_join(market1_data, purchases_data, by = c("id", "date", "sid", "brand")) %>%
     mutate(price = case_when(is.na(price) == TRUE ~ pre_coupon_price,
+                             price < 0 ~ 0,
                              TRUE ~ price),
            chosen_brand = case_when(is.na(chosen_brand) == TRUE ~ 0,
                                     TRUE ~ chosen_brand),
@@ -49,7 +50,12 @@ main <- function() {
   market1_data <- market1_data %>%
     group_by(id, date, sid) %>%
     mutate(shopping_trip = group_indices()) %>%
+    ungroup 
+  market1_data <- market1_data %>%
+    group_by(date, sid) %>% 
+    mutate(occasion = group_indices()) %>%
     ungroup
+  
   market1_data <- market1_data %>%
     group_by(shopping_trip) %>%
     mutate(some_price_missing = case_when(is.na(price) == TRUE ~ 1,
@@ -57,9 +63,8 @@ main <- function() {
            sum_some_price_missing = sum(some_price_missing)) %>%
     ungroup %>%
     filter(sum_some_price_missing == 0) %>%
-    select(shopping_trip, id, date, sid, price, pre_coupon_price, brand, 
+    select(shopping_trip, id, occasion, date, sid, price, pre_coupon_price, brand, 
            chosen_brand, del_monte_dummy, heinz_dummy, hunts_dummy, store_dummy)
-  
   
   return(market1_data)
   }
@@ -110,7 +115,7 @@ clean_hp_data <- function() {
   hp1_data$upc <- format(hp1_data$upc, digits = 13)
   hp1_data <- hp1_data %>%
     select(id, date, trip, upc, sid, units, weight, scval, mcval) %>%
-    mutate(standarized_coupons = (32/weight)*(scval + mcval)) %>%
+    mutate(standarized_coupons = (32/(weight*units))*(scval + mcval)) %>%
     arrange(id, date, upc) %>%
     select(id, date, sid, upc, standarized_coupons) %>%
     distinct(id, date, sid, .keep_all = TRUE)
