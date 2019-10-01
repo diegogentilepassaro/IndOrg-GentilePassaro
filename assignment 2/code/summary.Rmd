@@ -15,6 +15,7 @@ header-includes:
   - \usepackage{pgfplots}
   - \usepackage{float}
   - \floatplacement{figure}{H}
+  - \floatplacement{table}{H}
   - \pgfplotsset{compat=1.16}
 ---
 
@@ -25,14 +26,13 @@ library(stringr)
 library(knitr)
 library(pander)
 
-source("../../lib/R/ols_reg.R")
-source("../../lib/R/iv_reg.R")
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.width=12, fig.height=8)
 ```
 
-```{r preclean, echo=FALSE}
+```{r run_code, echo=FALSE}
   source("preclean.R")
+  source("analysis.R")
 ```
 
 # 1 - Homogeneous Logit
@@ -47,19 +47,19 @@ First, let's define a brand. I've assigned each UPC into a ketchup brand accordi
 * CTL BR
 * GENERIC
 
-I identified the brand of each UPC by checking whether the desc variable in the UPC file contained one of the words in the list above. To simplify matters, I considered the CTL BR and the GENERIC to be the store brand STORE.
+I identified the brand of each UPC by checking whether the desc variable in the UPC file contained one of the words in the list above. To simplify matters, I considered the CTL BR and the GENERIC to be the STORE brand.
 
-Second, let's define a purchase occassion by the day-store. If in the household purchase data we observe a household purchasing ketchup more than once in the same store-day I keep only the first purchase.
+Second, let's define a purchase occassion by the household-day-store. If in the household purchase data we observe a household purchasing ketchup more than once in the same store-day I keep only the first purchase.
 
-Third, we need to obtain a price that varies by the household, the brand, and the purchase occasion. Note that households don't get utility from the quantity (weight) of ketchup that they consume, and they dislike paying higher a price. As products have a different size, and fixing a brand, the higher the quantity the higher the price (and presumably the lower the price per ounce) we have to normalize the price paid to represent always the same quantity. 
+Third, we need to obtain a per-unit price that varies by the household, the brand, and the purchase occasion. Note that households don't get utility from the quantity (weight) of ketchup that they consume, and they dislike paying higher a price. As products have a different size, fixing a brand, the higher the quantity purchased the higher the price payed (and presumably the lower the price per ounce). Therefore, have to normalize some how the price paid to represent always the same quantity. We proceed as follows:
 
-1. I merge the UPC file and the price file, and I construct a panel that contains the price (dpr) for each UPC on each store-day and the weight of each UPC in ounces, that is $weight = \frac{wamt}{1000}$. 
-2. For each store-day-UPC I compute the price per standarized quantity, which I am going to take as 32 ounces, as it is the most purchased size in the data. That is I compute price as $32* \frac{dpr}{weight}$.
-3. Now, to aggregate from the store-day-UPC to the brand-day-UPC I take the weighted average of the price where the weights vary by the UPC and is given by the total number of standarized units (where the standard is again 32 ounces) sold in the entire panel.
-4. At this point, we have a price index that makes sense but it does not vary by the household. To achieve that I will use the data on coupons, and I will assume that a household only has coupons on the product it purchases. The final price will be equal to the one computed in step **3.** minus the total standarized coupons that the household had for that brand the day of the purchase, were we allow for both store and manufacturer cooupons. We define standarized coupons as $\frac{32}{weight*units}*(scval + mcval))$, where the division by units is important to normalize the discount to the same 32 ounce bottle unit as the price. An example to illustrate this step is probably a good idea. Let's say that a household on a given day-store had a \$1 coupon when buying a \$2 bottle of ketchup of 32 ounces of a given brand. Then the price faced by the household is \$1. If instead the household bought a 44 ounces bottle of a ketchup brand that costs \$3, then the standarized pre-coupon-price of the bottle would be $32*(\frac{3}{44}) = 2.18$ and the standardized value of the coupons would be $32*\frac{1}{44} = 0.73$, so the price faced by the household would be \$1.45. If instead the household bought two 32 ounces bottles of ketchup that cost \$2 each and had a coupon of \$1, then the pre-coupon-price faced would be \$2 (as that is the price for a 32 ounces bottle) and the standarized value of coupons will be \$0.5, so the price faced by the household would be \$1.5.
+1. We merge the UPC file and the price file, and construct a panel that contains the price (dpr) for each UPC on each store-day and the weight of each UPC in ounces, that is $weight = \frac{wamt}{1000}$. 
+2. For each store-day-UPC we compute the price per standarized quantity, which we are going to take as 32 ounces, as it is the most purchased size in the data. That is, we compute price as $32* \frac{dpr}{weight}$.
+3. Now, to aggregate from the store-day-UPC to the store-day-brand we take the weighted average of the price per standarized quantity where the weights vary by the UPC and is given by the total number of standarized units (where the standard is again 32 ounces) sold in the entire panel.
+4. At this point, we have a price index that varies by the brand-store-id but it does not vary by the household. To achieve that I will use the data on coupons, and I will assume that a household only has coupons on the product it purchases. The final price will be equal to the one computed in step **3.** minus the total standarized coupons that the household had for that brand the day of the purchase, were we allow for both store and manufacturer coupons. We define standarized coupons as $\frac{32}{weight*units}*(scval + mcval))$, where the division by units is important to normalize the discount to the same 32-ounce-unit as the price. An example to illustrate this step is probably a good idea. Let's say that a household on a given day-store had a \$1 coupon when buying a \$2 bottle of ketchup of 32 ounces of a given brand. Then the price faced by the household is \$1. If instead the household bought a 44 ounces bottle of a ketchup brand that costs \$3, then the standarized pre-coupon-price of the bottle would be $32*(\frac{3}{44}) = 2.18$ and the standardized value of the coupons would be $32*\frac{1}{44} = 0.73$, so the price faced by the household would be \$1.45. If instead the household bought two 32 ounces bottles of ketchup that cost \$2 each and had a coupon of \$1, then the pre-coupon-price faced would be \$2 (as that is the price for a 32 ounces bottle) and the standarized value of coupons will be \$0.5, so the price faced by the household would be \$1.5.
 5. The last step is an assumption. Whenever we observe a household-store-brand with a negative price, we assume it payed zero. There are only 115 observations like these among 26975 purchsaes under consideration. 
 
-Fourth, we build a panel as follows. For each household-day-store (which we refer hereafter as a shopping trip) we have 4 observations, one corresponding to each brand. For each shopping trip and brand we also have the corresponding price (as computed by the explanation abive). If for any of the 4 brands in any given shopping trip a price is not available, then we drop the whole shopping trip (the 4 observations, one for each brand). Finally, we add a dummy variable that indicates which of the four brands was chosen for each shopping trip.  
+Fourth, we build a panel as follows. For each purchase occasion we have 4 observations, one corresponding to each brand. For each purchase occasion and brand we also have the corresponding price (as computed by the explanation above). If for any of the 4 brands in any given purchase occasion a price is not available, we drop the purchase occasion (the 4 observations, one for each brand). Finally, we add a dummy variable that indicates which of the four brands was chosen in each purchase occasion.  
 
 ## (a) Estimate the parameters of the model and comment on whether the parameter estimates make sense to you.
 
@@ -75,20 +75,33 @@ Then, the probability that household $i$ at purchase ocassion $t$ is observed ch
 
 \[\Pi_j (\pi_{itj})^{y_{itj}}\]
 
-Where $y_{itj} = 1$ if household $i$ at purchase ocassion $t$ chooses brand $j$ and 0 otherwise. Now assuming that:
+Where $y_{itj} = 1$ if household $i$ at purchase ocassion $t$ chooses brand $j$ and 0 otherwise. Now lets's state the following assumptions:                                           
 
-1. At any given $t$ the choice of decision maker $i$ is independent of the choice of any other decision maker at any $t$ (including that same $t$).
+1. At any given $t$ the choice of decision maker $i$ is independent of the choice of any other decision maker $j$ at any $t$ (including that same $t$).
 2. For any given $i$ the choices over $t$ are independent.
 
-We can write the likelihood of observing a sequence of decision's in the data as:
+With assumptions **1.** and **2.** we can write the likelihood of observing a sequence of decisions in the data as:
 
 \[L(\alpha, \beta) = \Pi_{i=1}^N \Pi_{t=1}^{T_i} \Pi_{j=1}^J (\pi_{itj})^{y_{itj}}\]
 
-Therefore, applying the natural logarithm we have that:
+Where $N$ is the number of households, $T_i$ is the number of purchase occassions for household $i$, and $J$ is the number of brands, which in this case will be 4. Therefore, applying the natural logarithm we have that:
 
 \[LL(\alpha, \beta) = \sum_{i=1}^N \sum_{t=1}^{T_i} \sum_{j=1}^J y_{itj}\Big[(\alpha-\beta P_{itj}) - \ln(\sum_k \exp(\alpha - \beta P_{itk})) \Big] \]
 
-To obtain the ML estimates we first normalize $\alpha = 0$ and then we maximize $LL(0,\beta)$ with respect to $\beta$. 
+To obtain the ML estimates we first normalize $\alpha = 0$ and then we maximize $LL(0,\beta)$ with respect to $\beta$. The results are below:
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+ML estimates \\ \hline\hline
+$\beta$ & `r model_a_beta`  \\ 
+ & (`r model_a_beta_se`) \\
+$\alpha$ & 0  \\ 
+ & - \\
+ \hline
+\end{tabular}
+\end{table}
 
 ## (b) Now re-estimate supposing that:
 
@@ -96,7 +109,30 @@ To obtain the ML estimates we first normalize $\alpha = 0$ and then we maximize 
 
 ## and comment on whether the parameter estimates make sense to you. The remaining problem is based on your estimates in this part.
 
+Following the same reasoning as in **(a)**, we have that for this new model the log-likelihood is given by:
 
+\[LL(\{\alpha_j\}_{j=1}^4, \beta) = \sum_{i=1}^N \sum_{t=1}^{T_i} \sum_{j=1}^J y_{itj}\Big[(\alpha_j-\beta P_{itj}) - \ln(\sum_k \exp(\alpha_k - \beta P_{itk})) \Big] \]
+
+Where $\alpha_1 = \alpha_{DEL \ MONTE}$, $\alpha_2 = \alpha_{HEINZ}$, $\alpha_3 = \alpha_{HUNTS}$ and $\alpha_4 = \alpha_{STORE}$. I normalize $\alpha_{STORE} = \alpha_4 = 0$, and then maximize $LL(\{\alpha_j\}_{j=1}^4, \beta)$ simultaneously with respect to $\alpha_1$, $\alpha_2$, $\alpha_3$ and $\beta$. The results are shown below:
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+ML estimates and standard errors \\ \hline\hline
+$\beta$ & `r model_b_beta`  \\ 
+ & (`r model_b_beta_se`) \\
+$\alpha_{DEL \ MONTE}$ & `r model_b_alpha_DEL_MONTE`  \\ 
+ & (`r model_b_alpha_DEL_MONTE_se`) \\
+$\alpha_{HEINZ}$ & `r model_b_alpha_HEINZ`  \\ 
+ & (`r model_b_alpha_HEINZ_se`) \\
+$\alpha_{HUNTS}$ & `r model_b_alpha_HUNTS`  \\ 
+ & (`r model_b_alpha_HUNTS_se`) \\
+$\alpha_{STORE}$ & 0  \\ 
+ & - \\ 
+ \hline
+\end{tabular}
+\end{table}
 
 ## (c) What is the average willingness-to-pay for Heinz ketchup relative to store-brand ketchup?
 
@@ -115,7 +151,11 @@ Which we can write as:
 
 But note that because of the i.i.d. type 1 extreme value distibution of the $\epsilon_{itj}$ we know that $E[\epsilon_{itHEINZ} - \epsilon_{itSTORE}] = 0$. Therefore, we have that:
 
-\[\omega = \frac{alpha_{HEINZ} - \alpha_{STORE}}{\beta}\]
+\[\omega = \frac{\alpha_{HEINZ} - \alpha_{STORE}}{\beta}\]
+
+For the estimates in **(b)**, we have that:
+
+\[\omega = \frac{`r model_b_alpha_HEINZ` - 0}{`r model_b_beta`} = `r omega`\]
 
 ## (d) What is the expected loss in consumer surplus (per purchase occasion) from eliminating the Del Monte brand from the market?
 
@@ -123,15 +163,32 @@ Start by noting that in this context the partial derivative of utility with resp
 
 \[\frac{\partial u_{itj}}{\partial Y_{itj}} = \frac{\partial u_{itj}}{\partial (- P_{itj})} = \beta\]
 
-So that, following Train (2009), we have that:
+So that, following Train (2009), and assuming that the marginal utility of income is independent of income, we have that for each occasion the expected change in consumer surplus is given by:
 
-\[E(\Delta CS) = \frac{1}{\beta} \Big [\ln\big(\sum_{j} \exp(\alpha_j - \beta P_{itj})\big) - \ln\big(\sum_{j\neq Del \ Monte} \exp(\alpha_j - \beta P_{itj})\big) \Big]\]
+\[E(\Delta CS_{it}) = \frac{1}{\beta} \Big [\ln\big(\sum_{j} \exp(\alpha_j - \beta P_{itj})\big) - \ln\big(\sum_{j\neq Del \ Monte} \exp(\alpha_j - \beta P_{itj})\big) \Big]\]
+
+So the change in consumer surplus per purchase ocassion is just the sum of $E(\Delta CS_{it})$ over purchase occasions divided by the number of purchase occasions. In this case, plugging the estimates fom part **(b)**, we get that the expected loss in consumer surplus per purchase occasion of eliminating the Del Monte brand from the market is of \$`r -E_change_CS_per_occasion`.
 
 ## (e) What is the elasticity of demand for each brand?
 
 Again, following Train (2009), we have that the price elasticity of demand for each brand is given by:
 
 \[\eta^j_{it} = \frac{\partial \pi_{itj}}{\partial P_{itj}} \frac{P_{itj}}{\pi_{itj}} = -\beta P_{itj} (1-\pi_{itj})\]
+
+Therefore, the average price elasticity of demand is just the sum of $\eta^j_{it}$ over purchase occasions divided by the number of purchase occasions. Again, we compute it by plugging the estimates from part **(b)**. We report the average price elasticities of demand for each brand below:
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+Brand & Average Elasticity  \\ \hline\hline
+DEL MONTE & `r average_etas$eta_DEL_MONTE` \\
+HEINZ & `r average_etas$eta_HEINZ` \\
+HUNTS & `r average_etas$eta_HUNTS` \\
+STORE & `r average_etas$eta_STORE` \\
+ \hline
+\end{tabular}
+\end{table}
 
 ## (f) Assume that ketchup is produced with constant marginal cost and that each brand chooses its price to maximize its profit, taking as given the prices of the other brands. Given the elasticity in (e) and the average price of each brand, what is the implied marginal cost of each brand?
 
@@ -156,6 +213,8 @@ Where $\eta^j$ is the price elasticity of demand of brand $j$. The, we get that 
 Rearranging we get that:
 
 \[c_j = P_j\Big(1+\frac{1}{\eta^j}\Big)\]
+
+Note that we can use the average elasticities from part **(f)**, and we can compute $P_j$ as the average per-purchase occasion price of brand $j$.
 
 ## (g) Now estimate a more flexible version of the model with:
 
@@ -184,6 +243,10 @@ Therefore, a remaining brand $j$ trying to maximize profits taking as given the 
 \[argmax_{P_j} \ (P_j - c_j) \tilde\pi_j(P_j, P_{-j})\]
 
 After some algebra, the first order condition of this problem is:
+
+\[P_j = \frac{1}{\beta[1-\tilde\pi_j(P_j, P_{-j})]}+ c_j\]
+
+Which we can further simplify using the definition of $\tilde\pi_j(P_j, P_{-j})$ as:
 
 \[[(P_j - c_j)\beta - 1]\frac{\sum_{k\neq j} \exp(\alpha_k - \beta P_k)}{\exp(\alpha_j - \beta P_j)} = 0 \]
 

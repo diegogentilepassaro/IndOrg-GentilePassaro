@@ -1,13 +1,3 @@
-#### Preliminaries ####
-this.dir <- dirname(parent.frame(2)$ofile)
-setwd(this.dir)
-rm(list = ls())
-
-unlink("../temp", recursive = TRUE)
-unlink("../output", recursive = TRUE)
-dir.create("../temp")
-dir.create("../output")
-
 #### Assignment 2 - preclean ####
 library(haven)
 library(dplyr)
@@ -39,32 +29,25 @@ main <- function() {
                              TRUE ~ price),
            chosen_brand = case_when(is.na(chosen_brand) == TRUE ~ 0,
                                     TRUE ~ chosen_brand),
-           del_monte_dummy = case_when(brand == "DEL MONTE" ~ 1,
-                                       TRUE ~ 0),
-           heinz_dummy = case_when(brand == "HEINZ" ~ 1,
-                                   TRUE ~ 0),
-           hunts_dummy = case_when(brand == "HUNT'S" ~ 1,
-                                   TRUE ~ 0),
-           store_dummy = case_when(brand == "STORE" ~ 1,
-                                       TRUE ~ 0))
+           brand = case_when(brand == "DEL MONTE" ~ 1,
+                             brand == "HEINZ" ~ 2,
+                             brand == "HUNT'S" ~ 3,
+                             brand == "STORE" ~ 4))
+  
   market1_data <- market1_data %>%
     group_by(id, date, sid) %>%
-    mutate(shopping_trip = group_indices()) %>%
-    ungroup 
-  market1_data <- market1_data %>%
-    group_by(date, sid) %>% 
     mutate(occasion = group_indices()) %>%
     ungroup
   
   market1_data <- market1_data %>%
-    group_by(shopping_trip) %>%
+    group_by(occasion) %>%
     mutate(some_price_missing = case_when(is.na(price) == TRUE ~ 1,
                                           TRUE ~ 0),
            sum_some_price_missing = sum(some_price_missing)) %>%
     ungroup %>%
     filter(sum_some_price_missing == 0) %>%
-    select(shopping_trip, id, occasion, date, sid, price, pre_coupon_price, brand, 
-           chosen_brand, del_monte_dummy, heinz_dummy, hunts_dummy, store_dummy)
+    select(occasion, id, date, sid, price, brand, 
+           chosen_brand)
   
   return(market1_data)
   }
