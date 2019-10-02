@@ -120,14 +120,14 @@ Where $\alpha_1 = \alpha_{DEL \ MONTE}$, $\alpha_2 = \alpha_{HEINZ}$, $\alpha_3 
 \begin{tabular}{cc}
 \hline
 ML estimates and standard errors \\ \hline\hline
-$\beta$ & `r model_b_beta`  \\ 
- & (`r model_b_beta_se`) \\
-$\alpha_{DEL \ MONTE}$ & `r model_b_alpha_DEL_MONTE`  \\ 
- & (`r model_b_alpha_DEL_MONTE_se`) \\
-$\alpha_{HEINZ}$ & `r model_b_alpha_HEINZ`  \\ 
- & (`r model_b_alpha_HEINZ_se`) \\
-$\alpha_{HUNTS}$ & `r model_b_alpha_HUNTS`  \\ 
- & (`r model_b_alpha_HUNTS_se`) \\
+$\beta$ & `r beta`  \\ 
+ & (`r beta_se`) \\
+$\alpha_{DEL \ MONTE}$ & `r alpha_DEL_MONTE`  \\ 
+ & (`r alpha_DEL_MONTE_se`) \\
+$\alpha_{HEINZ}$ & `r alpha_HEINZ`  \\ 
+ & (`r alpha_HEINZ_se`) \\
+$\alpha_{HUNTS}$ & `r alpha_HUNTS`  \\ 
+ & (`r alpha_HUNTS_se`) \\
 $\alpha_{STORE}$ & 0  \\ 
  & - \\ 
  \hline
@@ -155,7 +155,7 @@ But note that because of the i.i.d. type 1 extreme value distibution of the $\ep
 
 For the estimates in **(b)**, we have that:
 
-\[\omega = \frac{`r model_b_alpha_HEINZ` - 0}{`r model_b_beta`} = `r omega`\]
+\[\omega = \frac{`r alpha_HEINZ` - 0}{`r beta`} = `r omega`\]
 
 ## (d) What is the expected loss in consumer surplus (per purchase occasion) from eliminating the Del Monte brand from the market?
 
@@ -167,11 +167,11 @@ So that, following Train (2009), and assuming that the marginal utility of incom
 
 \[E(\Delta CS_{it}) = \frac{1}{\beta} \Big [\ln\big(\sum_{j} \exp(\alpha_j - \beta P_{itj})\big) - \ln\big(\sum_{j\neq Del \ Monte} \exp(\alpha_j - \beta P_{itj})\big) \Big]\]
 
-So the change in consumer surplus per purchase ocassion is just the sum of $E(\Delta CS_{it})$ over purchase occasions divided by the number of purchase occasions. In this case, plugging the estimates fom part **(b)**, we get that the expected loss in consumer surplus per purchase occasion of eliminating the Del Monte brand from the market is of \$`r -E_change_CS_per_occasion`.
+So the average expected change in consumer surplus per purchase ocassion is just the sum of $E(\Delta CS_{it})$ over purchase occasions divided by the number of purchase occasions. In this case, plugging the estimates fom part **(b)**, we get that the expected loss in consumer surplus per purchase occasion of eliminating the Del Monte brand from the market is of \$`r -E_change_CS_per_occasion`.
 
 ## (e) What is the elasticity of demand for each brand?
 
-Again, following Train (2009), we have that the price elasticity of demand for each brand is given by:
+Again, following Train (2009), we have that the price elasticity of demand for each brand in a given purchase occasion is given by:
 
 \[\eta^j_{it} = \frac{\partial \pi_{itj}}{\partial P_{itj}} \frac{P_{itj}}{\pi_{itj}} = -\beta P_{itj} (1-\pi_{itj})\]
 
@@ -182,10 +182,10 @@ Therefore, the average price elasticity of demand is just the sum of $\eta^j_{it
 \begin{tabular}{cc}
 \hline
 Brand & Average Elasticity  \\ \hline\hline
-DEL MONTE & `r average_etas$eta_DEL_MONTE` \\
-HEINZ & `r average_etas$eta_HEINZ` \\
-HUNTS & `r average_etas$eta_HUNTS` \\
-STORE & `r average_etas$eta_STORE` \\
+DEL MONTE & `r eta_DEL_MONTE` \\
+HEINZ & `r eta_HEINZ` \\
+HUNTS & `r eta_HUNTS` \\
+STORE & `r eta_STORE` \\
  \hline
 \end{tabular}
 \end{table}
@@ -214,7 +214,35 @@ Rearranging we get that:
 
 \[c_j = P_j\Big(1+\frac{1}{\eta^j}\Big)\]
 
-Note that we can use the average elasticities from part **(f)**, and we can compute $P_j$ as the average per-purchase occasion price of brand $j$.
+Note that we can use the average elasticities from part **(f)**, and we can compute $P_j$ as the average price of brand $j$  across purchase occasions. The average prices are reported below:
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+Brand & Average Price  \\ \hline\hline
+DEL MONTE & `r avg_P_DEL_MONTE` \\
+HEINZ & `r avg_P_HEINZ` \\
+HUNTS & `r avg_P_HUNTS` \\
+STORE & `r avg_P_STORE` \\
+ \hline
+\end{tabular}
+\end{table}
+
+Finally, the implied marginal costs for each brand are reported below:
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+Brand & Implied Marginal Cost  \\ \hline\hline
+DEL MONTE & `r c_DEL_MONTE` \\
+HEINZ & `r c_HEINZ` \\
+HUNTS & `r c_HUNTS` \\
+STORE & `r c_STORE` \\
+ \hline
+\end{tabular}
+\end{table}
 
 ## (g) Now estimate a more flexible version of the model with:
 
@@ -250,4 +278,28 @@ Which we can further simplify using the definition of $\tilde\pi_j(P_j, P_{-j})$
 
 \[[(P_j - c_j)\beta - 1]\frac{\sum_{k\neq j} \exp(\alpha_k - \beta P_k)}{\exp(\alpha_j - \beta P_j)} = 0 \]
 
-Which defines implicitly $P_j^{BR}$ for a remaining brand $j$. For simplicity, assume that Del Monte was indexed by brand $4$. The new prices $(P^{NEW}_1, P^{NEW}_2,P^{NEW}_3)$ constitute a Nash equilibrium if they are a fixed point of the system of equations given by the 3 first order conditions of the remaining firms. We can solve the stated system numerically. 
+Which defines implicitly $P_j^{BR}$ for a remaining brand $j$. For simplicity, assume that Del Monte was indexed by brand $4$. The new prices $(P^{NEW}_1, P^{NEW}_2,P^{NEW}_3)$ constitute a Nash equilibrium if they are a fixed point of the system of equations given by the 3 first order conditions of the remaining firms. We can solve the stated system numerically using the parameter estimates from **(b)**, and both the average prices and the marginal costs from **(f)**. The nash equilibrium prices together with the average prices reported in **(f)** are reported below:
+
+\begin{table}
+\centering
+\begin{tabular}{ccc}
+\hline
+Brand & Average Price & Nash Equilibrium Price \\ \hline\hline
+DEL MONTE & `r avg_P_DEL_MONTE` & - \\
+HEINZ & `r avg_P_HEINZ` & `r nash_P_HEINZ` \\
+HUNTS & `r avg_P_HUNTS` & `r nash_P_HUNTS` \\
+STORE & `r avg_P_STORE` & `r nash_P_STORE` \\
+ \hline
+\end{tabular}
+\end{table}
+
+As predicted by micro theory,in oligopolistic markets with differentiated partial substitute products we have that nash equilibrium prices of the remaining firms increase after a firm exits the market. Now, we can compute the expected consumer surplus loss per purchase occasion in a similar fashion that in **(d)**. However, note that there we computed the average per purchase occasion and now that is not feasible as we cannot observe the nash prices for each purchase occasion. To be able to compare the consumer surplus loss of the exit of DEL MONTE when we hold prices fixed or when they adjust, we will compute two objects. On the one hand, the expected consumer surplus loss per purchase occasion at the average prices holding prices fixed:
+
+\[\Delta CS_{it}(\bar P) = \frac{1}{\beta} \Big [\ln\big(\sum_{j} \exp(\alpha_j - \beta \bar P_j)\big) - \ln\big(\sum_{j\neq Del \ Monte} \exp(\alpha_j - \beta \bar P_j)\big) \Big]\]
+
+
+Where $\bar P$ is the vector of average prices. On the other hand, we will compute the expected consumer surplus loss per purchase occasion at the average prices when prices respond as per the nash equilibrium:
+
+\[\Delta CS_{it}(\bar P, P^{NASH}) = \frac{1}{\beta} \Big [\ln\big(\sum_{j} \exp(\alpha_j - \beta \bar P_j)\big) - \ln\big(\sum_{j\neq Del \ Monte} \exp(\alpha_j - \beta  P^{NASH}_j)\big) \Big]\]
+
+We get that $\Delta CS_{it}(\bar P, P^{NASH}) = `r E_CS_nash`$, and that $\Delta CS_{it}(\bar P) = `r E_CS_avg_price`$. This implies a consumer surplus loss of \$0.09 per purchase occasion when we don't hold prices fixed, which is an order of magnitude higher than the implied loss of \$0.01 when holding prices fixed.
