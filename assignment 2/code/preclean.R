@@ -107,5 +107,6 @@ clean_hp_data <- function() {
 
 # Execute
 market1_data <- main()
+write.csv(market1_data, "../temp/market1_data.csv")
 write_dta(market1_data, "../temp/market1_data.dta", version = 14)
 

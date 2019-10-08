@@ -1,16 +1,4 @@
-#### Preliminaries ####
-this.dir <- dirname(parent.frame(2)$ofile)
-setwd(this.dir)
-rm(list = ls())
-options(scipen=999)
-
-unlink("../temp", recursive = TRUE)
-unlink("../output", recursive = TRUE)
-dir.create("../temp")
-dir.create("../output")
-
-#### Assignment 2 - analysis ####
-source("preclean.R")
+#### Assignment 2 - Question 1 ####
 library(stats4)
 library(nleqslv)
 
@@ -229,17 +217,17 @@ nash_P_HUNTS <- nash_prices$x[2]
 nash_P_STORE <- nash_prices$x[3]
 
 E_CS_avg_price <- round((1/beta)*(log(exp(alpha_HEINZ - beta*avg_P_HEINZ) +
-                                    exp(alpha_HUNTS - beta*avg_P_HUNTS) +
-                                    exp(-beta*avg_P_STORE)) - 
-                                log(exp(alpha_DEL_MONTE - beta*avg_P_DEL_MONTE) + 
-                                    exp(alpha_HEINZ - beta*avg_P_HEINZ) +
-                                    exp(alpha_HUNTS - beta*avg_P_HUNTS) +
-                                    exp(-beta*avg_P_STORE))), digits = 2)
+                                      exp(alpha_HUNTS - beta*avg_P_HUNTS) +
+                                      exp(-beta*avg_P_STORE)) - 
+                                  log(exp(alpha_DEL_MONTE - beta*avg_P_DEL_MONTE) + 
+                                      exp(alpha_HEINZ - beta*avg_P_HEINZ) +
+                                      exp(alpha_HUNTS - beta*avg_P_HUNTS) +
+                                      exp(-beta*avg_P_STORE))), digits = 2)
 
 E_CS_nash <- round((1/beta)*(log(exp(alpha_HEINZ - beta*nash_P_HEINZ) +
-                           exp(alpha_HUNTS - beta*nash_P_HUNTS) +
-                           exp(-beta*nash_P_STORE)) - 
-                       log(exp(alpha_DEL_MONTE - beta*avg_P_DEL_MONTE) + 
-                             exp(alpha_HEINZ - beta*avg_P_HEINZ) +
-                             exp(alpha_HUNTS - beta*avg_P_HUNTS) +
-                             exp(-beta*avg_P_STORE))), digits = 2)
+                                 exp(alpha_HUNTS - beta*nash_P_HUNTS) +
+                                 exp(-beta*nash_P_STORE)) - 
+                             log(exp(alpha_DEL_MONTE - beta*avg_P_DEL_MONTE) + 
+                                 exp(alpha_HEINZ - beta*avg_P_HEINZ) +
+                                 exp(alpha_HUNTS - beta*avg_P_HUNTS) +
+                                 exp(-beta*avg_P_STORE))), digits = 2)
