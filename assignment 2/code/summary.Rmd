@@ -373,7 +373,7 @@ is a draw from $\mathcal{N}(0, I_J)$. We can then maximize the following simulat
 & SLL(data,\mu, \Sigma) = \sum_i ln\Big(\frac{1}{R}\sum_{r=1}^R \prod_{t=1}^{T_i} \prod_j [\pi_{itj}(\alpha_i^r)]^{y_{itj}})\Big)
 \end{aligned}\]
 
-The results are presented below:
+The results for simulations with $R = 100$ are presented below:
 
 \begin{table}
 \centering
@@ -409,33 +409,39 @@ and that:
 
 ## (d) From the estimates in (b), what is the elasticity of demand for each brand?
 
-For a given household $i$, conditional on his vector $\alpha_i$ we have that:
-
-\[\eta_{ij}(\alpha_i) = \frac{\partial \pi_{ij}(\alpha_i)}{\partial P_j} \frac{P_j}{\pi_{ij}(\alpha_i)}\]
-
-Where we have thatS:
-
-\[\pi_{ij}(\alpha_i) = \frac{\exp(\alpha_{ij} - \beta P_{k})}{\sum_{k}\exp(\alpha_{ik} - \beta P_{k})}\]
-
-And $P_j$ is the average price for brand $j$ that we computed in part **1-(d)**.
-
-Now note that:
+Conditional on vector $\alpha_i$ note that:
 
 \[\frac{\partial \pi_{ij}(\alpha_i)}{\partial P_j} = -\beta \pi_{ij}(\alpha_i)(1-\pi_{ij}(\alpha_i))\]
 
-Therefore, we have that:
+Where we have that:
 
-\[\eta_{ij}(\alpha_i) = -\beta P_j(1-\pi_{ij}(\alpha_i))\]
+\[\pi_{ij}(\alpha_i) = \frac{\exp(\alpha_{ij} - \beta P_{j})}{\sum_{k}\exp(\alpha_{ik} - \beta P_{k})}\]
 
-Now, aggregating for all households we have that:
+And where $P_j$ is the average price for brand $j$ that we computed in part **1-(d)**.
 
-\[\eta_j = -\beta P_j \int (1-\pi_{ij}(\alpha_i)) f(\alpha_i/\mu, \Sigma) d\alpha_i\]
+Now note that, aggregating for all households we get:
+
+\[\frac{\partial \pi_{j}}{\partial P_j} = -\beta \int\pi_{ij}(\alpha_i)(1-\pi_{ij}(\alpha_i))f(\alpha_i/\mu, \Sigma) d\alpha_i\]
 
 Now note that we can compute this by Montecarlo simulation where:
 
-\[\eta_j \approx -\beta P_j \frac{1}{R}\sum_{r=1}^R (1-\pi_{ij}(\alpha_i^r))\]
+\[\frac{\partial \pi_{j}}{\partial P_j} \approx -\beta \frac{1}{R} \sum_{r=1}^R\pi_{ij}(\alpha_i^r)(1-\pi_{ij}(\alpha_i^r))\]
 
-Where $\alpha_i^r$ is a draw from a multivariate normal with mean $\mu$ and variance $\Sigma$, and we take the estimates from **(b)** to calibrate $\beta$, $\mu$ and $\Sigma$. The results are presented below:
+Where $\alpha_i^r$ is a draw from a multivariate normal with mean $\mu$ and variance $\Sigma$, and we take the estimates from **(b)** to calibrate $\beta$, $\mu$ and $\Sigma$.
+
+Now, we can get the elasticity faced by the firm of each brand by:
+
+\[\eta_j = \frac{\partial \pi_{j}}{\partial P_j} \frac{P_j}{\pi_j}\]
+
+But first we need to define:
+
+\[\pi_j = \int \pi_{ij}(\alpha_i)f(\alpha_i/\mu, \Sigma) d\alpha_i\]
+
+Which also can be computed by simulation:
+
+\[\pi_j \approx \frac{1}{R}\sum_{r=1}^R \pi_{ij}(\alpha_i^r)\]
+
+The results for the elasticities faced by the firms are presented below:
 
 \begin{table}
 \centering
