@@ -1,0 +1,158 @@
+                Documentation for the Daily Price Files
+          *************************************************
+
+	The data in the A C Nielsen Household Purchase History files was
+used to create files which describe the daily purchasing behavior of the
+consumers as well as the prices, coupons, and advertising to which they 
+were exposed at the time of their purchases.  In short, the daily price
+files contain time series data for brands with a market share of at least
+1%, giving for each day the consumer behavior, prices, store coupon  
+information, and levels of advertising.
+
+	Within chains whose stores had nearly identical pricing behavior, 
+those stores had their prices and store coupon information calculated by
+chain.  Within market 1 this includes chains 4 and 5.  The other stores were
+done on an individual basis.  All stores in market 2 were done individually.
+
+	What follows is a listing of the variables in the datasets PF1.SSD
+and PF2.SSD, the price files corresponding to markets 1 (Sioux Falls, South
+Dakota) and 2 (Springfield, Missouri).  The files are sorted by UPC (or PID),
+by chain, by store id, by date.  Within each store id, the dates are
+continuous from the Wednesday prior to the first observation in the HP file
+to the Tuesday following the last.
+
+
+
+Name		Type	Length			Description
+****		****	******		*************************
+
+UPC or PID	num	  7		Upc or product id number
+
+CHAIN		num       3		Store chain number
+
+SID		num       3		Store id number
+
+DATE		num       4		Date in SAS format(i.e. number of
+					  days since January 1, 1960)
+
+DPR		num       4		Daily price or 'deal' price
+
+REG		num       4		Regular price
+
+CUT		num       4		Manufacturer sponsored price cut
+					(Note: this only applies with the
+						dry detergent datasets)
+
+UNITS		num       4		Total number of units purchased 
+					  in the store that day
+
+SCIND		num       3		Store coupon indicator. (1 if
+					  there were store coupons available,
+					  0 if not)
+
+SCUNITS		num       4		Total number of units purchased on
+					  store coupons that day
+
+SCVAL		num       4		Modal value of the store coupons
+					  redeemed that day	
+
+MCIND		num       3		Manufacturer coupon indicator.
+					  (1 if a manufacturer coupon was
+					  redeemed that day, 0 if not)
+
+MCUNITS		num       4		Total number of units purchased on
+					  manufacturer coupons that day
+
+AMCV		num       4		Average value of manufacturer coupons
+					  redeemed that day
+
+LINE		num       3		Line-advertisment indicator
+
+MAJOR		num       3		Major-advertisment indicator
+
+DISPLAY		num       3		Display (of any type) indicator 
+
+
+
+
+
+			  Store Chains
+                *********************************
+
+Following is a list of the chains in each market and the stores within them.
+
+
+Sioux Falls (Mkt1)			Store Id Numbers
+__________________			________________
+
+Chain 1					39
+
+Chain 2					3, 4, 7
+
+Chain 3					36, 10
+
+Chain 4					43, 2
+
+Chain 5					16, 18, 21, 24, 26, 29
+
+Independent				45, (32, 33, 34, 35)
+
+
+In Sioux Falls:
+
+	- Chains 3 & 4 market themselves as "Everyday Low Price"
+	- All chains are regional "corporate chains," having 4 or
+	    more stores in total
+
+
+
+Springfield (Mkt2)			Store Id Numbers
+___________				________________
+
+Chain 1					1, 5, 6, 8, 9, 11, 12, 14, 15
+
+Chain 2					17, 19, 41, 20
+
+Chain 3					22, 23, 25, 27, 28
+
+Chain 4					30, 31, 40
+
+
+In Springfield:
+
+	- Chain 1 markets itself as "Everyday Low Price"
+	- Chain 4 is an independent; all others are regional
+	    "corporate chains," having 4 or more stores in total
+
+
+
+
+
+
+		          Further Notes
+		*********************************
+
+1.	Product id numbers were used for categories such as yogurt to group
+   together similar types of a single brand (e.g. all fruit variations of 
+   Brand A yogurt)
+
+2.	DPR, REG, SCVAL, and MCVAL are all in dollars.
+
+3.	The daily or 'deal' price refers to the price on the shelves which 
+   was actually paid by the consumers, prior to any coupons. 
+
+4.	In the original Household Purchase History files there were
+   observations which had a non-zero value for SCUNITS (or MCUNITS) but a
+   value of zero for SCVAL (or MCVAL).  If such were the case on a given day,
+   SCIND (or MCIND) was given a value of 1 and SCVAL (or MCVAL) was given
+   a value of -999.
+
+5.	Within a product id in the dry detergent category, certain upc's 
+   corresponded to a version of that product for which the manufacturer
+   suggested a cut in the regular price, and this suggested price was
+   advertised on the label of the product.  The variable CUT gives the
+   value of this price cut, and takes on the value zero if no price cut
+   was in effect.  The variable CUT is in dollars.
+ 
+6.	Store id's 32, 33, 34, and 35 were dropped from the market 1 price files
+   because of extremely low volume.

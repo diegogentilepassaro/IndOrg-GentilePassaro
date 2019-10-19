@@ -1,0 +1,232 @@
+     Documentation of the Creation of the Price Files PF1.SSD and PF2.SSD
+   ************************************************************************
+
+   What follows is a discussion of the steps used to create the price files
+   pf1.ssd and pf2.ssd, and the programs use to accomplish these steps.
+   
+
+I.	Determining the start of a week.
+
+	The program PCHANGE_MODE.SAS was used to help determine which day of 
+   the week would be the best to use as the start of a new week with respect to
+   changes in price.  The Household Purchase History file for a given product
+   category was input and daily prices were computed by taking the mode of all 
+   prices for a given day.  If the mode was not unique, then the average of the
+   modal prices was taken.  When a change in price was observed from one day to 
+   the next, the day of the week upon which the new price began was
+   recorded.  A histogram of these days was created for each store id, as well
+   as a histogram for the aggregate data.  It was determined that the mode   
+   occurred on Wednesday for the majority of the store id's, and was clearly so 
+   in the aggregate.  It should be noted, however, that the modes in market 2
+   were not as clearly defined as those in market 1.
+
+
+
+II.	Checking equivalence of prices within chains.
+
+	If the pricing policies of the stores within a given chain were similar
+   enough, we wanted to use the aggregate data of all the stores to compute the
+   daily (or 'deal') and regular prices of the chain as a whole and then take 
+   these values to be those of each store.  In this manner we hoped that each 
+   store might be supported by the others when gaps arose in the original data
+   which could not be filled easily.
+
+	The program EQUIV.SAS was called for each pair of stores in a chain by 
+   EQUIV_CALL.SAS (and EQUIV_CALL2.SAS in mkt 2) to determine what percentage 
+   of the time the pair would yield different 'deal' prices when both had 
+   observations for a given day.  The prices were computed in the same manner 
+   as they would be when the price-algorithm was used on the entire dataset
+   (as described below).  Pairs of stores whose prices would be different more
+   than 5% of the time were rejected as mutual supporters.
+
+	In market 1, it was decided that stores in chains 4 and 5 would have
+   their prices computed by chain; all other stores would be done individually.
+   In market 2, there was not enough agreement between stores in any of the
+   chains, so it was decided that all stores would be done individually.
+
+
+
+III.	Creation of the price files.
+
+   A.	   The main program.
+
+	   The main program used in the creation of the price files is called
+	PFMASTER.SAS.  It begins by creating a subset of the HP-file 
+	containing only observations for the upcs( or pids) which were 
+	determined to have had a market share of 1% or more.  The market
+	shares were calculated with respect to units sold, and the results
+	listed in files MKT_SHARE1.DOC and MKT_SHARE2.DOC.  The prices are
+	then put through the price algorithm by using the following programs:
+	WKLYPRC_GEN.SAS, DIPS.SAS, DSTEP.SAS, FINISH.SAS, and PRCALG_FIN.SAS.
+	These programs will be discussed in detail below.  This algorithm was
+	first done by chain for chains 4 and 5, and then by store for all 
+	stores not included in those chains.
+
+	   Next, indicator variables were computed for line and major
+	advertisments.  If on a given day there was any purchase which had an
+	adtype of 'L' recorded with it, the variable LINE took on a value
+	of 1; otherwise the value was 0.  The variable MAJOR was done in a 
+	similar manner when the adtype was 'M.'  Also, if any type of display
+	was recorded as having been in the store, the variable DISPLAY took
+	on a value of 1; otherwise the value was zero.  These variables 
+	were computed by upc(pid)/sid/date.
+
+	   After this step, the program PFMASTER.SAS computed the total number
+	of units purchased, again by upc(pid)/sid/date.  Also, the total number
+	of units purchased on store coupons, and manufacturer coupons, were 
+	computed and stored as SCUNITS and MCUNITS, respectively.  Total units
+	purchased were stored as UNITS.  The daily value for manufacturer
+	coupons was taken to be the simple mean of the individual coupon
+	values for that day and stored as AMCV.  For store coupons, the 
+	assumption was made that coupon offers would run for an entire week, so
+	within a given week for which at least one nonzero coupon value was
+	recorded, the mode value of that week's redeemed coupons was taken as
+ 	the value for the entire week and stored as SCVAL.  If the mode was not
+	unique, then the maximum of the modal values was used.  The final part
+	of this section was to create indicator variables to point out whether
+	the SCUNITS, and MCUNITS, were nonzero for a given day.  These
+	variables were name SCIND and MCIND.  The reason for these indicators
+	is that the original HP files sometimes contain a nonzero value for
+	the store (or manufacturer) coupon units but a coupon value of zero.
+	In these cases the SCVAL (or AMCV) is set to -999, and SCIND 
+	(or MCIND) takes on a value of 1.  As with the prices, SCIND and SCVAL
+	were done by chain for stores in chains 4 and 5.
+
+	   The rest of the program PFMASTER.SAS deals with combining the data
+	into one large price file.  The program INCLUDE_SID.SAS was used to 
+	duplicate the chain data of chains 4 and 5 for each of the stores
+	within those chains.   Once this is done, the various datasets are
+	merged together, missing values are set to zero, and the dataset is
+	sorted by upc(or pid), by chain, by sid, by date.
+	   
+
+   B.	   The price algorithm programs.
+
+	Note: Each of the following programs handles the data by upc (or pid),
+	      by chain/store id, by date (or week).
+
+	WKLYPRC_GEN.SAS:
+		This program generates weekly prices, with each week beginning
+		on Wednesday.  For each week, a list of prices and their weekly
+		market shares is created.  If the price with the largest sales
+		share has a share greater than or equal to 60%, then that price
+		is the weekly price.  If the largest sales share is less than
+		60%, and two prices have at least 25%, and the higher of these
+		two has a sales share greater than or equal to 40%, then 
+		that higher price is the weekly price; otherwise the price with
+		the higher sales share is the weekly price.  Finally, if the
+		largest sales share is less than 60%, and three or more prices
+		have a sales share of at least 25%, and the price with the
+		highest sales share has a share of at least 50%, then that
+		price is the weekly price; otherwise the weekly price is the 
+		maximum of the prices with sales share greater than or equal
+		to 25%. 
+
+		A less precise explaination is as follows.  If only one
+		price has a large share then choose that price.  If two
+		prices have fairly large shares, then the highest of the two
+		can be the weekly price, even though it has less than half of
+		the total shares.  This is because the lower priced boxes are
+ 		picked more frequently, since consumers usually seek out the
+		box with the lower price.  If more than two prices have fairly
+		large shares, the price with the highest share will be the
+		weekly price if it has more than half of the sales share.
+		Otherwise choose the maximum of these prices.
+ 
+	DIPS.SAS:
+		This program looks at the weekly prices as a time series.
+		If it sees a dip in the weekly price which lasts for three
+		weeks or less and then rises to a price above the original,
+		it fills the dip with the original price.  Three iterations
+		of this program are done in PFMASTER.SAS.
+
+	DSTEP.SAS:
+		This program is run after the three iterations of DIPS.SAS, and
+		also considers the weekly prices as a time series.  If it sees
+		a period of three weeks or less in which the prices make
+		downward steps, it fills each of those steps up to the value 
+		of the original price.  Three iterations of this program are
+		done in PFMASTER.SAS.
+
+	FINISH.SAS:
+		This program is run after DSTEP.SAS, and again considers the
+		weekly prices as a time series.  If it sees a dip in price
+		which lasts for three weeks or less, but after which the price 
+		rises to a level less than that of the original, the dip is
+		filled to the value of the original price.  Only one iteration
+		of this program is done in PFMASTER.SAS.
+
+	PRCALG_FIN.SAS:
+		This is the final part of the price algorithm.  It creates a
+		daily price file starting from the Wednesday of the first 
+		observed week and ending with the Tuesday of the last.  The 
+		variable REG is the weekly price extended over the days of 
+		each respective week.  The variable DPR is the daily or 'deal' 
+		price, and is computed on a day to day basis when possible.
+		If there are one or more observations in the HP file  
+		for a given day, then DPR is the mode of the prices.  If the
+		mode is not unique, then DPR is the maximum of those modal 
+		prices.  Within each week, DPR is then filled using days
+		which had observations.  If there were no observations for 
+		a given week, DPR is set equal to REG.
+
+
+   C.	   Other programs called by PFMASTER.SAS.
+
+	SCU.SAS:
+		This program takes any week which has a nonzero value of
+		SCIND for any of the days, and makes SCIND equal to 1 for
+		all of the days during that week.  Otherwise the value of
+		SCIND is zero.
+
+	SCOUPVAL.SAS:
+		This program finds the weekly modes of the store coupon value.
+		If the mode is not unique, then the maximum value is used.
+		The weekly SCVAL is then stretched over all the days of its
+		respective week.
+
+	INCLUDE_SID.SAS:
+		This program was used to match the chain data computed in
+		chains 4 and 5 of market 1 with the stores within those
+		chains. For each store, the first and last days in the HP
+		file which had observations were recorded and the days were
+		filled in between.  This list was then extended to the 
+		Wednesday prior to the first day and the Tuesday following
+		the last.  Then the chain data was merged with each of
+		these lists of dates in a manner such that only dates which
+		were in the list were represented.  A slight change in notation
+		was needed when the dry detergent price files were created,
+		and the corresponding program was named INCLUDE_SID2.SAS.
+
+	CHAIN_EDATE.SAS:
+		This program was used to create the formats for the variable
+		CHAIN and the variable DATE in the price files, from the
+		variables SID and EDATE in the original HP files.  Although
+		this program is not actually called by PFMASTER.SAS, the
+		library containing these formats is referenced at the start.
+	
+
+   D.	   Differences between PFMASTER2.SAS and PFMASTER.SAS.
+
+	   The program PFMASTER2.SAS is the version of PFMASTER.SAS which
+	was run on data in market 2.  A different version was needed because
+	none of the stores were to be computed by chain.  Thus the price
+	algorithm was only run once, as were the programs SCU.SAS and
+	SCOUPVAL.SAS.  Also, the program INCLUDE_SID.SAS was not needed.
+	The format and included variables of the final output are identical to
+	those of PFMASTER.SAS.
+
+ 
+   E.	   Note on the Dry Detergent price files.
+
+	   A variable called CUT was added to the dry detergent price files.
+	At times the manufacturer turns out a version of a detergent with a
+	suggestion to cut the regular price by a given amount, and this cut
+	is advertised on the label of the product itself.  In the HP files, 
+	the variable CUT gives the value of this price cut, and takes the
+	value of zero if no cut is in effect.  The variable CUT was run 
+	through the same algorithm as the prices in the version of PFMASTER.SAS
+	which was used on the dry detergent data.  The final variable is also
+	called CUT.
+
+	 
