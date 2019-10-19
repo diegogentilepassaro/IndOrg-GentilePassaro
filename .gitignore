@@ -9,5 +9,5 @@ draft/
 *.Rhistory
 *.Rapp.history
 *.Rproj.user
-*.Rproj.user/
+*.Rproj.user/*
 *.DS_Store
