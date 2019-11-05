@@ -1,0 +1,392 @@
+---
+title: "Summary"
+output: pdf_document
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+knit: (function(inputFile, encoding) { 
+      out_dir <- '../output';
+      intermediates_dir <- '../output';
+      clean <- TRUE;
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=file.path(dirname(inputFile), 
+                        out_dir, 'summary.pdf')) })
+header-includes: 
+  - \usepackage{tikz}
+  - \usepackage{pgfplots}
+  - \usepackage{float}
+  - \floatplacement{figure}{H}
+  - \floatplacement{table}{H}
+  - \pgfplotsset{compat=1.16}
+---
+
+```{r setup, include=FALSE}
+library(haven)
+library(dplyr)
+library(stringr)
+library(knitr)
+library(pander)
+
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=8)
+```
+
+```{r run_code, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+  source("main.R")
+```
+
+# Ketchup
+
+## Model 1 - $E(\xi_{jt}/ p_t) = 0 \ \forall j$ and $\beta_i = \beta \ \forall i$
+
+First, I've normalized $\hat\xi_{0t} = 0$ and then computed $\hat\xi_{jt}$ through:
+
+\[
+\hat\xi_{jt}  = \ln(s_{jt}) - \ln(s_{0t}) - \alpha_{DM}d^{DM}_{jt} - \alpha_{HE}d^{HE}_{jt} - \alpha_{HU}d^{HU}_{jt} - \beta (p_{jt} - p_{0t})
+\]
+
+Where $d^k_{jt}$ equals 1 if $k = j$ and it is zero otherwise (just brand dummies), and where a variable with subindex $0t$ correspond to the subindexed variable for the store brand at week $t$.
+
+Then, for $Z'_{jt} = (d^{DM}_{jt}, d^{HE}_{jt}, d^{HU}_{jt}, p_{jt} - p_{0t})$ I construct the following moment condition :
+
+\[
+\hat g(\alpha_{DM}, \alpha_{HE}, \alpha_{HU}, \beta) = \frac{1}{T} \frac{1}{J} \sum_{t=1}^T \sum_{j=1}^J Z'_{jt} \hat\xi_{jt}(\alpha_{DM}, \alpha_{HE}, \alpha_{HU}, \beta)
+\]
+
+With the true parameters the above moment condition should be zero, therefore, I estimate the parameters in the following way:
+
+\[
+(\hat\alpha_{DM}, \hat\alpha_{HE}, \hat\alpha_{HU}, \hat\beta) = argmin_{(\alpha_{DM}, \alpha_{HE}, \alpha_{HU}, \beta)} \ \hat g(\alpha_{DM}, \alpha_{HE}, \alpha_{HU}, \beta) \hat W \hat g(\alpha_{DM}, \alpha_{HE}, \alpha_{HU}, \beta)'
+\]
+
+I have used the efficient GMM weighting matrix (for this case) given by:
+
+\[\hat W^{OLS} = (Z'Z)^{-1}\]
+
+The estimates are reported below:
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+Parameter & Estimate  \\ \hline\hline
+$\alpha_{DM}$ & `r alpha_DM_m1` \\
+$\alpha_{HE}$ & `r alpha_HE_m1` \\
+$\alpha_{HU}$ & `r alpha_HU_m1` \\
+$\beta$ & `r beta_m1` \\
+ \hline
+\end{tabular}
+\end{table}
+
+Note that we could have estimated the parameters through estimating the following model using OLS:
+
+\[
+\ln(S_{jt}) - \ln(S_{0t}) = \alpha_{DM}d^{DM}_{jt} + \alpha_{HE}d^{HE}_{jt} + \alpha_{HU}d^{HU}_{jt} - \beta (P_{jt} - P_{0t}) + \epsilon_{jt}
+\]
+
+As for the own-price elasticities, we can proceed as follows. As in this model there is no household heterogeneity we can denote the market share of brand $j$ at time $t$ as:
+
+\[
+S_{jt} = \frac{\exp(\alpha_{j} - \beta P_{jt} + \xi_{jt})}{\sum_{k}\exp(\alpha_{k} - \beta P_{tk} + \xi_{kt})}
+\]
+
+Where $p_{jt}$ denote the price of brand $j$ at week $t$. Now, we can note define:
+
+\[
+S_{j} = \frac{\exp(\alpha_{j} - \beta P_{j})}{\sum_{k}\exp(\alpha_{k} - \beta P_{k})}
+\]
+
+Where $P_j$ is the average weekly price for brand $j$, and where we used the fact that for any brand $j$ we have that $\sum_t \xi_{jt} = 0$. Now, differentiating with respect to $P_{j}$ we obtain:
+
+\[
+\frac{\partial S_{j}}{\partial P_{j}} = -\beta S_{j} (1- S_{j})
+\]
+
+And we can compute the elasticity for firm $j$ at the average price $p_j$ as:
+
+\[
+\eta_j = \frac{\partial S_{j}}{\partial P_{j}} \frac{p_j}{S_j} = -\beta S_{j} (1- S_{j}) \frac{P_j}{S_j} = \beta(1-S_j)P_j
+\]
+
+Now, for the cross price-elasticities we can note that $\forall \ k\neq j$:
+
+\[
+\frac{\partial S_{j}}{\partial P_{k}} = \beta S_{j}S_k
+\]
+
+Therefore, we can compute the demand elasticity of brand $j$ to the price of brand $k\neq j$ as:
+
+\[
+\eta_{jk} = \frac{\partial S_{j}}{\partial P_{k}} \frac{P_k}{S_j} =  \beta S_{j}S_k \frac{P_k}{S_j} = \beta S_{k}P_k
+\]
+
+We report the elasticities below:
+
+\begin{table}
+\centering
+\begin{tabular}{ccccc}
+Elasticities \\
+\hline
+ & DM & HE & HU & SB \\ \hline
+DM & `r as.numeric(elasticities[1, "elasticity_m1"])` & `r as.numeric(elasticities[2, "elasticity_m1"])` & `r as.numeric(elasticities[3, "elasticity_m1"])` & `r as.numeric(elasticities[4, "elasticity_m1"])` \\
+HE & `r as.numeric(elasticities[5, "elasticity_m1"])` & `r as.numeric(elasticities[6, "elasticity_m1"])` & `r as.numeric(elasticities[7, "elasticity_m1"])` & `r as.numeric(elasticities[8, "elasticity_m1"])` \\
+HU & `r as.numeric(elasticities[9, "elasticity_m1"])` & `r as.numeric(elasticities[10, "elasticity_m1"])` & `r as.numeric(elasticities[11, "elasticity_m1"])` & `r as.numeric(elasticities[12, "elasticity_m1"])` \\
+SB & `r as.numeric(elasticities[13, "elasticity_m1"])` & `r as.numeric(elasticities[14, "elasticity_m1"])` & `r as.numeric(elasticities[15, "elasticity_m1"])` & `r as.numeric(elasticities[16, "elasticity_m1"])` \\
+ \hline
+\end{tabular}
+\end{table}
+
+## Model 2 - $E(\xi_{jt}/ \tilde p_t) = 0 \ \forall j$ and $\beta_i = \beta \ \forall i$
+
+I proceed exactly as in model 1, but now I used instead $Z'_{jt} =(d^{DM}_{jt}, d^{HE}_{jt}, d^{HU}_{jt}, \tilde p_{jt} - \tilde p_{0t})$. Again, I have used the efficient GMM weighting matrix (for this case) which coincides with the one for Model 1. The estimates are presented below. 
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+Parameter & Estimate  \\ \hline\hline
+$\alpha_{DM}$ & `r alpha_DM_m2` \\
+$\alpha_{HE}$ & `r alpha_HE_m2` \\
+$\alpha_{HU}$ & `r alpha_HU_m2` \\
+$\beta$ & `r beta_m2` \\
+ \hline
+\end{tabular}
+\end{table}
+
+We can compute the own and cross-price elasticities in the same way as we did for model 1, with the only difference being that now we use the estimated $\beta$ from model 2. The estimated elasticities below:
+
+\begin{table}
+\centering
+\begin{tabular}{ccccc}
+Elasticities \\
+\hline
+ & DM & HE & HU & SB \\ \hline
+DM & `r as.numeric(elasticities[1, "elasticity_m2"])` & `r as.numeric(elasticities[2, "elasticity_m2"])` & `r as.numeric(elasticities[3, "elasticity_m2"])` & `r as.numeric(elasticities[4, "elasticity_m2"])` \\
+HE & `r as.numeric(elasticities[5, "elasticity_m2"])` & `r as.numeric(elasticities[6, "elasticity_m2"])` & `r as.numeric(elasticities[7, "elasticity_m2"])` & `r as.numeric(elasticities[8, "elasticity_m2"])` \\
+HU & `r as.numeric(elasticities[9, "elasticity_m2"])` & `r as.numeric(elasticities[10, "elasticity_m2"])` & `r as.numeric(elasticities[11, "elasticity_m2"])` & `r as.numeric(elasticities[12, "elasticity_m2"])` \\
+SB & `r as.numeric(elasticities[13, "elasticity_m2"])` & `r as.numeric(elasticities[14, "elasticity_m2"])` & `r as.numeric(elasticities[15, "elasticity_m2"])` & `r as.numeric(elasticities[16, "elasticity_m2"])` \\
+ \hline
+\end{tabular}
+\end{table}
+
+## Model 3 - $E(\xi_{jt}/ p_t) = 0 \ \forall j$ and $\ln(\beta_i) \sim \mathcal{N}(\mu, \sigma^2)$
+
+Start by noting that in this case we can write the random utility model for individual $i$, brand $j$ at week $t$ as:
+
+\[
+u_{ijt} = \underbrace{\alpha_j + \xi_{jt}}_{\delta_{jt}} + \underbrace{-\beta_ip_{jt}}_{\gamma_{ijt}(\beta_i)} + \epsilon_{ijt}
+\]
+
+Where $\beta_i$ is distributed lognormal $\mu$ and $\sigma$. This implies that:
+
+\[
+S_{jt}(\{\alpha_j\}_{j=1}^J, \mu, \sigma^2, \xi_{jt}) = \int_{\beta} \frac{\exp(\delta_{jt} + \gamma_{ijt}(\beta_i))}{\sum_k \exp(\delta_{kt} + \gamma_{ikt}(\beta_i))} dF(\beta)
+\]
+
+For given $\{\alpha_j\}_{j=1}^J, \mu, \sigma^2$, we can approximate this integral through simulation or quadrature. I will do quadrature because it is faster than simulation (for equal number of nodes and draws respectively). I will use only 3 nodes because for the number of parameters to estimate in this model the approximation error is already quite small. Define $n_r$ as a node and $w_r$ as the weight of that node. Then, we have that $\beta_r = exp(\mu + \sigma*n_r)$. Then, I compute the following:
+
+\[
+S_{jt}(\{\alpha_j\}_{j=1}^J, \mu, \sigma^2, \xi_{jt}) = S_{jt}(\delta(\{\alpha_j\}_{j=1}^J, \mu, \sigma^2, \xi_{jt})) \approx \sum_{r=1}^R w_r \frac{\exp(\delta_{jt} + \gamma_{ijt}(\beta_r))}{\sum_k \exp(\delta_{kt} + \gamma_{ikt}(\beta_r))}
+\]
+
+Once we realize the above facts, we can perform Berry's inversion, that is for fixed parameters find $\delta^*_{jt}$ such that $S_{jt}(\delta^*(\{\alpha_j\}_{j=1}^J, \mu, \sigma^2, \xi_{jt})) = S^{data}_{jt}$, where $S^{data}_{jt}$ is the share of brand $j$ at week $t$ that we observe in the data. I do this by using a nested fixed point method. Starting with an initial vector of all $\delta_{jt} = 1$, I compute the implied share $S_{jt}$ given a $\mu$ and a $\sigma$. Then  we can compute $S^{data}_{jt} - S_{jt}$, and retrieve a new iteration of delta, $\delta'_{jt}$,  as $\delta'_{jt} = \delta_{jt} + (S^{data}_{jt} - S_{jt})$. Berry, Levinsohn and Pakes (1995) showed that this method is a contraction mapping. 
+
+With $\delta^*_{jt}$ at hand, we can now compute:
+
+\[
+\hat\xi_{jt} = \delta^*_{jt} - \alpha_j 
+\]
+
+Which can be implemented computing the residuals of the regression model of $\delta^*_{jt}$ on the brand dummies, omitting the brand dummy for the store brand (as we normalize $\alpha_{STORE} = 0$), without an intercept.
+
+Now, we can have a solver find the  $\mu$, and $\sigma^2$ that minimize the same GMM objective as in models 1 and 2. The only difference is that in this case we have 5 paremeters to estimate so the 4 moments used in models 1 and 2 will not suffice. Instead we will exploit that $E(\xi_{jt}/ p_t) = 0 \ \forall j$ and we use $Z$ consisting of the brand dummies (again withe $\alpha_{STORE} = 0$), and 4 price variables, one for each brand. As before, first define:
+
+\[
+\hat g(\mu, \sigma^2) = \frac{1}{T} \frac{1}{J} \sum_{t=1}^T \sum_{j=1}^J Z'_{jt} \hat\xi_{jt}(\mu, \sigma^2)
+\]
+
+Then, the solver will do:
+
+\[
+(\hat\mu, \hat\sigma^2) = argmin_{(\mu, \sigma^2)} \ \hat g(\mu, \sigma^2) \hat W \hat g(\mu, \sigma^2)'
+\]
+
+For a weighting matrix $\hat W$, which I take to be the one of models 1 and 2 but with the new $Z$ vector. Finally, to retrieve the brand-specific intercepts we will compute for $\hat\mu$ and $\hat\sigma^2$ the $\delta^*_{jt}$ through the contraction mapping, and compute a linear model without intercept of the $delta^*_{jt}$ as dependent variable and the brand dummies as the independent variables. The 3 coefficients of that estimated model are the estimates of the brand-specific intercepts $\alpha_{DM}$, $\alpha_{HE}$, and $\alpha_{HU}$.
+
+The results are displayed in the table below:
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+Parameter & Estimate  \\ \hline\hline
+$\alpha_{DM}$ & `r alpha_DM_m3` \\
+$\alpha_{HE}$ & `r alpha_HE_m3` \\
+$\alpha_{HU}$ & `r alpha_HU_m3` \\
+$\mu$ & `r mu` \\
+$\sigma$ & `r sigma` \\
+ \hline
+\end{tabular}
+\end{table}
+
+To convince ourselves that the results in the table are ineed the optimal, we did 3 sanity checks. First, we set $\sigma = 0$ and use our algorithm to find $\mu$ and the brand-specific intercept and we compared these estimates with a model very similar to model 1 except that instead of using the 4 moment conditions that we used there we used the same moment conditions that we used in model 3. The coefficients resulted to be the same. Second, we computed the implied market shares of the model for each week and brand, and we compared it with the actual shares, they are really close. Third, we varied the starting point of the solver for $\mu$ and $\sigma$ and we obtained the same results as reported. 
+
+As for the own-price elasticities, we can proceed as follows. First define the following:
+
+\[
+S_{ij} = \frac{\exp(\alpha_{j} - \beta_i P_{j})}{\sum_{k}\exp(\alpha_{k} - \beta_i P_{t})}
+\]
+
+Then, we have that:
+
+\[
+S_{j} = \int \frac{\exp(\alpha_{j} - \beta_i P_{j})}{\sum_{k}\exp(\alpha_{k} - \beta_i P_{t})} dF(\beta_i)
+\]
+
+We can compute this integral with numerical integration through simulation. To do that we simulate 200 draws from a standard normal and define, for a given draw $Z_r$, $\beta_r = exp(\mu + \sigma Z_r)$. We calibrate $\mu$ and $\sigma$ with the estimates of model 3 and we compute the following:
+
+\[
+S_{j} \approx \frac{1}{R} \sum_{r=1}^R \frac{\exp(\alpha_{j} - \beta_r P_{j})}{\sum_{k}\exp(\alpha_{k} - \beta_r P_{k})} dF(\beta_i)
+\]
+
+Where $P_j$ is the average weekly price for brand $j$, and where we used the fact that for any brand $j$ we have that $\sum_t \xi_{jt} = 0$.
+
+Now, we can differentiate S_{ij} with respect to $P_{j}$ and obtain:
+
+\[
+\frac{\partial S_{ij}}{\partial P_{j}} = -\beta_i S_{ij} (1- S_{ij})
+\]
+
+And we can compute the elasticity for firm $j$ at the average price $p_j$ as:
+
+\[
+\eta_j = \frac{\partial S_{ij}}{\partial P_{j}} \frac{P_j}{S_{j}} = - \frac{P_j}{S_{j}} \int \beta_i S_{ij} (1- S_{ij}) dF(\beta_i)
+\]
+
+Now, for the cross price-elasticities we can note that $\forall \ k\neq j$:
+
+\[
+\frac{\partial S_{ij}}{\partial P_{k}} = \beta_i S_{ij}S_{ik}
+\]
+
+Therefore, we can compute the demand elasticity of brand $j$ to the price of brand $k\neq j$ as:
+
+\[
+\eta_{jk} = \frac{\partial S_{ij}}{\partial P_{k}} \frac{P_k}{S_{j}} =  \frac{P_k}{S_{j}}\int\beta_i S_{ij}S_{ik} dF(\beta_i)
+\]
+
+For both $\eta_j$ and $\eta_jk$ we can compute the integrals with numerical integration through simulation, as we did with the share of market. The estimated elasticities are reported in the table below:
+
+\begin{table}
+\centering
+\begin{tabular}{ccccc}
+Elasticities \\
+\hline
+ & DM & HE & HU & SB \\ \hline
+DM & `r as.numeric(elasticities_m3[1, "elasticity_m3"])` & `r as.numeric(elasticities_m3[2, "elasticity_m3"])` & `r as.numeric(elasticities_m3[3, "elasticity_m3"])` & `r as.numeric(elasticities_m3[4, "elasticity_m3"])` \\
+HE & `r as.numeric(elasticities_m3[5, "elasticity_m3"])` & `r as.numeric(elasticities_m3[6, "elasticity_m3"])` & `r as.numeric(elasticities_m3[7, "elasticity_m3"])` & `r as.numeric(elasticities_m3[8, "elasticity_m3"])` \\
+HU & `r as.numeric(elasticities_m3[9, "elasticity_m3"])` & `r as.numeric(elasticities_m3[10, "elasticity_m3"])` & `r as.numeric(elasticities_m3[11, "elasticity_m3"])` & `r as.numeric(elasticities_m3[12, "elasticity_m3"])` \\
+SB & `r as.numeric(elasticities_m3[13, "elasticity_m3"])` & `r as.numeric(elasticities_m3[14, "elasticity_m3"])` & `r as.numeric(elasticities_m3[15, "elasticity_m3"])` & `r as.numeric(elasticities_m3[16, "elasticity_m3"])` \\
+ \hline
+\end{tabular}
+\end{table}
+
+
+
+# Cars
+
+## 1) What is the researcher’s estimate of $\beta$?
+
+The base level of utility is $\alpha$ so we can normalize it to zero. Then, to estimate $\beta$ we use the following (that follows inmediately from the logit model implied shares using as a normalizing option brand 1):
+
+\[
+\begin{aligned}
+& ln(S_2) - ln(S_1) = -\beta (P_2 - P_1) \to 0 = 0\\
+& ln(S_3) - ln(S_1) = -\beta (P_3 - P_1) \to ln(4) = 20\beta \to \beta = \frac{ln(4)}{20}\\
+& ln(S_4) - ln(S_1) = -\beta (P_4 - P_1) \to ln(4) = 20\beta \to \beta = \frac{ln(4)}{20}\\
+\end{aligned}
+\]
+
+So that $\beta = \frac{ln(4)}{20}$.
+
+## 2) Evaluate the fit of the researcher’s model to the data.
+
+In this case the implied share for brand $j$ is given by:
+
+\[
+\begin{aligned}
+& \hat S_j = \frac{exp(-P_j\frac{ln(4)}{20})}{2(exp(-50\frac{ln(4)}{20}) + exp(-30\frac{ln(4)}{20}))} = \\
+& \frac{4^{\frac{-P_j}{20}}}{2(4^{\frac{-5}{2}} + 4^{\frac{-3}{2}})} = \frac{4^{\frac{-P_j}{20}}}{0.3125} 
+\end{aligned}
+\]
+
+Using the different prices we can notice that the shares implied by the model fit exactly the observed shares. 
+
+## 3) What is the researcher’s estimate of the marginal cost of each class and brand?
+
+The profit function of firm $j$ is given by:
+
+\[
+\Pi_j = (P_j - c_j)S_j(P)
+\]
+
+Where $P$ denotes the vector of prices.
+
+From the first order condition for profit maximization with respect to prices and given Nash-Bertrand competition we get the well known formula below:
+
+\[
+\frac{1}{\beta(1-S_j(P))} = (P_j - c_j)
+\]
+
+Therefore, solving for $c_j$:
+
+\[
+c_j = P_j - \frac{1}{\beta(1-S_j(P))}
+\]
+
+Now note that the brands that produce sports cars have the same shares and prices, and the brands that produce family cars have the same shares and prices. Therefore, there are only two marginal costs:
+
+\[
+\begin{aligned}
+& c_1 = c_2 = c_{sports} = 33.97 \\
+& c_3 = c_4 = c_{family} = 5.95
+\end{aligned}
+\]
+
+## 4) The researcher is asked to predict the effect on prices of two possible mergers. The first is a merger between the owners of brands 1 and 2. The second is a merger between the owners of brands 1 and 3. Write out the system of equations that the researcher needs to solve in order to predict equilibirum prices in each case.
+
+The profit function of an unmerged firm $j$ is:
+
+\[
+\Pi_j = (P_j - c_j)S_j(P)
+\]
+
+Therefore, the first order condition is:
+
+\[
+(P_j - c_j)\beta(1-S_j(P)) - 1 = 0
+\]
+
+If firm $j$ merges with firm $k$ we will have that thge profit function is now:
+
+\[
+\Pi_{jk} = (P_j - c_j)S_j(P) + (P_k - c_k)S_k(P)
+\]
+
+Now, the merged firm can chose both prices and therefore the two first order conditions are:
+
+\[
+\begin{aligned}
+& \frac{\partial \Pi_{jk}}{\partial P_j} = S_j[1- (P_j-c_j)\beta(1-S_j) + (P_k - c_k)\beta S_k] = 0 \\
+& \frac{\partial \Pi_{jk}}{\partial P_k} = S_k[(P_j - c_j)\beta S_j + 1- (P_k-c_k)\beta(1-S_k)] = 0 
+\end{aligned}
+\]
+
+The set of first order conditions corresponding to the ones for the merged firm and the ones from the remaining unmerged firms is the system of equations that the researcher needs to solve in each case.
+
+## 5) Now suppose that in reality there are two kinds of consumers. Share 0.2 of consumers are sporty types who will only consider purchasing a sports car. Share 0.8 of consumers are family types who will only consider purchasing a family car. For each type of consumer, utility among the brands considered follows (2). What are the correct predictions for the effects of the two possible mergers on prices?
+
+As we are using a Logit model, the predictions for the effects in prices of a merger are going to depend only on the share of market of the involved firms. However, these predictions will be wrong.
+
+A merger between the owners of brands 1 and 2 will generate infinite prices of the sports cars. As the consumers that are of sports type will be forced to buy a car from the merged firm and the merged firm is a monopolist, it can always increase the price and make more profits. Therefore, the solution to profit maximization does not exist.
+
+On the contrary, a merger between the owners of brands 1 and 3 will have no effects as the new profit maximization problem for the merged firm is additive separable in the profits of each individual firm before the merge. Therefore, the solution of the new profit function with respect to the two prices coincides with the solution that arises from maximizing separately the two profit functions with respect to its own price respectively. 
