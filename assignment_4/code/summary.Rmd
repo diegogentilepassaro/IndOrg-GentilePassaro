@@ -154,8 +154,11 @@ There are a lot of ways to estimate the $\tilde\Phi()$. I am going to do it piec
 \hat{v(2)}(S^k) = \frac{\tilde\Phi^{-1}\Big(G_2(S^k)\Big)}{S^k}
 \]
 
-Finally, I obtain $\hat{v(2)}$ by taking a weighted average over $\hat{v(2)}(S^k)$ where the weights are given by the number of counties per bin. A graphical report of the results for the case using 7 bins is below:
+Finally, I obtain $\hat{v(2)}$ by taking a weighted average over $\hat{v(2)}(S^k)$ where the weights are given by the number of counties per bin. My estimate of $v(2)$ is equal to $0.357$. A graphical report of the results for the case using 7 bins is below:
 
 ![]("../output/figure_1")
 
+## (f) How do your results in (e) compare to those in (a)? What does this suggest about the importance of the normality assumption on Fi?
+
+The estimated $v(2)$ with the normality assumption is $20\%$ smaller than with the non-parametric procedure described. Therefore, the normality assumption leads us to overstate degree of competition in a duopoly relative to a monopoly.
 
