@@ -1,4 +1,5 @@
 raw/
+raw_data/
 *.gph
 *.dta
 *.png
@@ -12,3 +13,4 @@ draft/
 *.Rproj.user/*
 *.DS_Store
 *.Rproj
+.Rproj.user
