@@ -26,6 +26,8 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.width=10, fig.height=6)
 ```
 
+# Retail
+
 Assume that each county $i$ is a distinct market with population $S_i$ and let $N_i \in \{0,1,2\}$ denote
 the number of big-box discount retailers (Kmart or Walmart) in the county. Assume that profits to a discount retailer in county $i$ are given by:
 
@@ -158,7 +160,221 @@ Finally, I obtain $\hat{v(2)}$ by taking a weighted average over $\hat{v(2)}(S^k
 
 ![]("../output/figure_1")
 
+If the model were true we would observe that the orange line is exactly horizontal. Potentially, we could test jointly if the $v(2)(S^k)$'s are all statistically distinguishable or not. If we reject that they are all equal we can also reject that the model is correct. 
+
 ## (f) How do your results in (e) compare to those in (a)? What does this suggest about the importance of the normality assumption on Fi?
 
 The estimated $v(2)$ with the normality assumption is $20\%$ smaller than with the non-parametric procedure described. Therefore, the normality assumption leads us to overstate degree of competition in a duopoly relative to a monopoly.
+
+# Type 
+
+There is a set of markets indexed by $m$. In each market there are two firms, 1 and 2. The firms play the following game. Firm 1 chooses a binary attribute $x_{m1}\in\{0,1\}$, after which firm 2 observes $x_{m1}$ and chooses $x_{m2}\in\{0,1\}$. The firms realize payoffs given by:
+
+\[
+\pi_{mi} = \eta_m \Big(x_{mi} - \frac{1}{2}\Big) - \theta(1 - |x_{m1} - x_{m2}|)
+\]
+
+Where $\eta_m$ is distribited i.i.d. across markets $m$ according to distribution $\tilde\Phi$ symmetric around 0. We may think of $\theta\geq 0$ as the incentive to differentiate from one’s competitor. We may think of $\eta_m$ as a market-level shock to consumer preferences for firm attributes. The shock $\eta_m$ is common knowledge to the firms in market $m$. 
+
+## (a) Characterize the equilibrium of the game for a given market $m$ as a function of $\theta$ and $\eta_m$.
+
+We can proceed by backward induction. Firm 2 observes the action of firm 1 and chooses $x_{m2}$ to maximize $\pi_{m2}$. 
+
+If firm 2 observes $x_{m1} = 0$ then compares:
+
+\[
+\begin{aligned}
+& \pi_{m2} (0,0) = \frac{-\eta_m}{2}-\theta \\
+& \pi_{m2} (0,1) = \frac{\eta_m}{2}
+\end{aligned}
+\]
+
+Now, note that $pi_{m2} (0,0) \geq pi_{m2} (0,1) \iff \eta_m \leq -\theta$. Then, ignoring the measure 0 case we have that firm 2 chooses $x_{m2} = 0$ if $\eta_m < -\theta$ and chooses $x_{m2} = 1$ if $\eta_m > -\theta$.
+
+If firm 2 observes $x_{m1} = 1$ then compares:
+
+\[
+\begin{aligned}
+& \pi_{m2} (1,0) = \frac{-\eta_m}{2} \\
+& \pi_{m2} (1,1) = \frac{\eta_m}{2} - \theta
+\end{aligned}
+\]
+
+Now, note that $pi_{m2} (1,0) \geq pi_{m2} (1,1) \iff \eta_m \leq \theta$. Then, ignoring the measure 0 case we have that firm 2 chooses $x_{m2} = 0$ if $\eta_m < \theta$ and chooses $x_{m2} = 1$ if $\eta_m > \theta$.
+
+With the best response of firm 2 at hand we can solve for the best response of firm 1. 
+
+**Case 1 - $\eta < -\theta$**
+
+If $\eta < -\theta$, firm 2 will play $x_{m2} = 0$ no matter what is the action of firm 1. Knowing this firm 1 will compare:
+
+\[
+\begin{aligned}
+& \pi_{m1} (0,0) = \frac{-\eta_m}{2} - \theta \\
+& \pi_{m1} (1,0) = \frac{\eta_m}{2}
+\end{aligned}
+\]
+
+Now, note that $pi_{m1} (0,0) \geq \pi_{m1} (1,0) \iff \eta_m \leq -\theta$. Therefore, as we assumed that $\eta < -\theta$ we have that firm 1 will play $x_{m1} = 0$. 
+
+**Case 2 - $-\theta < \eta_m < \theta$**
+
+If $-\theta < \eta_m < \theta$ then:
+
+\[
+x_{m2}^{BR} = \begin{cases} 
+      1 & \text{if} \ \  x_{m1} = 0 \\
+      0 & \text{if} \ \  x_{m1} = 1 
+   \end{cases}
+\]
+
+Therefore, firm 1 compares:
+
+\[
+\begin{aligned}
+& \pi_{m1} (0,1) = \frac{-\eta_m}{2} \\
+& \pi_{m1} (1,0) = \frac{\eta_m}{2}
+\end{aligned}
+\]
+
+Now, note that $pi_{m1} (0,1) \geq \pi_{m1} (1,0) \iff \eta_m \leq 0$. Therefore, we have that:
+
+\[
+x_{m1}^{BR} = \begin{cases} 
+      0 & \text{if} \ \  \eta_m <  0 \\
+      1 & \text{if} \ \  \eta_m >  0 
+   \end{cases}
+\]
+
+**Case 3 - $\eta > \theta$**
+
+If $\eta > \theta$, firm 2 will play $x_{m2} = 1$ no matter what is the action of firm 1. Knowing this firm 1 will compare:
+
+\[
+\begin{aligned}
+& \pi_{m1} (0,1) = \frac{-\eta_m}{2} \\
+& \pi_{m1} (1,1) = \frac{\eta_m}{2} - \theta
+\end{aligned}
+\]
+
+Now, note that $pi_{m1} (0,1) \geq \pi_{m1} (1,1) \iff \eta_m \leq \theta$. Therefore, as we assumed that $\eta > \theta$ we have that firm 1 will play $x_{m1} = 1$.
+
+Putting all together we get that there are four possible equilibria. 
+
+If $\eta_m \in(-\infty, -\theta)$ then the equilibrium play is $(x_{m1}, x_{m2}) = (0,0)$.
+If $\eta_m \in(-\theta, 0)$ then the equilibrium play is $(x_{m1}, x_{m2}) = (0,1)$.
+If $\eta_m \in(0, \theta)$ then the equilibrium play is $(x_{m1}, x_{m2}) = (1,0)$.
+If $\eta_m \in(\theta, \infty)$ then the equilibrium play is $(x_{m1}, x_{m2}) = (1,1)$.
+
+## (b) Let $\rho = \frac{Cov(x_{m1}, x_{m2})}{\sqrt{Var(x_{m1})Var(x_{m2})}}$ denote the population value of the correlation between the choices of firms 1 and 2. Characterize $\rho$ as a function of $\tilde\Phi$ and $\theta$. Provide an intuition.
+
+Start by noting that because of part **(a)** if $\eta_m \leq 0$ we have that $x_{m1} = 0$. Then we have that:
+
+\[
+\begin{aligned}
+& Prob(x_{m1} = 0) = Prob(\eta_m \leq 0) = \tilde\Phi(0) \\
+& Prob(x_{m1} = 1) = Prob(\eta_m \geq 0) = 1- \tilde\Phi(0)
+\end{aligned}
+\]
+
+Now, note that by symmetry around 0 of $\tilde\Phi$ we have that $\tilde\Phi(0) = \frac{1}{2}$. Then, we have that $x_{m1}\sim Bernoulli(\frac{1}{2})$. 
+
+
+Let's now work out the distribution of $x_{m2}$. Note that:
+
+\[
+Prob(x_{m2} = 1) = Prob(-\theta \leq \eta_m \leq 0) + Prob(\eta_m \geq theta) = \tilde\Phi(0) - \tilde\Phi(-\theta)  + (1- \tilde\Phi(\theta))
+\]
+
+But that by symmetry around 0 of $\tilde\Phi$ we have that $\tilde\Phi(-\theta) = 1-\tilde\Phi(\theta)$. Therefore, we have that:
+
+\[
+\begin{aligned}
+& Prob(x_{m2} = 1) = \tilde\Phi(0) \\
+& Prob(x_{m2} = 0) = 1- \tilde\Phi(0) 
+\end{aligned}
+\]
+
+Then, using symmetry again, we have that $x_{m2}\sim Bernoulli(\frac{1}{2})$. Using the distributions that we just found we have that $\forall \ i = 1, 2$:
+
+\[
+\begin{aligned}
+& E(x_{mi}) = \frac{1}{2} \\
+& Var(x_{mi}) = \frac{1}{4}
+\end{aligned}
+\]
+
+Note that:
+
+\[
+Cov(x_{m1}, x_{m2}) = E(x_{m1}x_{m2}) - E(x_{m1})E(x_{m2}) = E(x_{m1}x_{m2}) - \frac{1}{4}
+\]
+
+So we just have to compute $E(x_{m1}x_{m2})$. Note that:
+
+\[
+E(x_{m1}x_{m2}) = Prob(x_{m1} = x_{m2} = 1) = Prob(\eta_m \geq \theta) = 1 - \tilde\Phi(\theta)
+\]
+
+Combining all we get that:
+
+\[
+\rho = \frac{1 - \tilde\Phi(\theta) - \frac{1}{4}}{\sqrt{\frac{1}{4}(\frac{1}{4})}} = 3-4\tilde\Phi(\theta)
+\]
+
+## (c) Is $\theta$ nonparametrically identified from $\rho$?
+
+Start from $\rho = 3-4\tilde\Phi(\theta)$. Note that we can rearrange as:
+
+\[
+\tilde\Phi(\theta) = \frac{3-\rho}{4}
+\]
+
+We can note now that there is not a unique $(\theta, \tilde\Phi)$ such that for a given $\rho$ we have that $\tilde\Phi(\theta) = \frac{3-\rho}{4}$. For example, consider $\tilde\Phi = \Phi$ the standard normal and $\rho = 0$. Then, $\theta \approx 0.675$ solves the equation. If instead, we consider a uniform distribution from 0 to 1, then, $\theta = 0.75$ solves the equation.
+
+## (d) Suppose that $\eta_m$ is distributed i.i.d. standard normal. Derive the maximum likelihood estimate of $\theta$.
+
+
+Using normality and the part before we have that:
+
+\[
+\theta = \Phi^{-1}\Big(\frac{3-\rho}{4}\Big)
+\]
+
+Wich is a function of $\rho$. Therefore, if we want $\hat{\theta}^{MLE}$, by the invariance property of MLE, we can jsut obtain $\hat{\rho}^{MLE}$ and plug it in. Now, note that using the results from part **(b)** we have that:
+
+\[
+\rho = \frac{Cov(x_{m1}, x_{m2})}{\sqrt{Var(x_{m1})Var(x_{m2})}} = \frac{E[(x_{m1} - \frac{1}{2})(x_{m2} - \frac{1}{2})]}{\frac{1}{4}}
+\]
+
+The MLE estimator is just the plug-in estimator:
+
+\[
+\hat{\rho}^{MLE} = \frac{\frac{1}{M} \sum_{m=1}^M (x_{m1} - \frac{1}{2})(x_{m2} - \frac{1}{2})}{\frac{1}{4}}
+\]
+
+
+Now, distributing terms and after some algebra we have that:
+
+\[
+\hat{\rho}^{MLE} = \frac{\sum_{m=1}^M \mathbbm{1}[x_{m1} = x_{m2} = 1] - \frac{1}{2}\Big(\sum_{m=1}^M \mathbbm{1}[x_{m1} = 1] + \sum_{m=1}^M \mathbbm{1}[x_{m2} = 1]\Big) + \frac{M}{4}}{\frac{M}{4}}
+\]
+
+Now, note that:
+
+\[
+\sum_{m=1}^M \mathbbm{1}[x_{m1} = 1] + \sum_{m=1}^M \mathbbm{1}[x_{m2} = 1] = \sum_{m=1}^M \Big[2\mathbbm{1}[x_{m1} = x_{m2} = 1] + \mathbbm{1}[x_{m1} = 0,  x_{m2} = 1] + \mathbbm{1}[x_{m1} = 1,  x_{m2} = 0] \Big]
+\]
+
+Therefore we have that:
+
+\[
+\hat{\rho}^{MLE} = \frac{\frac{M}{4}-\frac{1}{2}\sum_{m=1}^M[\mathbbm{1}[x_{m1} = 0,  x_{m2} = 1] + \mathbbm{1}[x_{m1} = 1,  x_{m2} = 0]]}{\frac{M}{4}} = 1 - \frac{2}{M}\sum_{m=1}^M \mathbbm{1}[x_{m1} \neq x_{m2}]
+\]
+
+Finally, we can find $\hat{\theta}^{MLE}$ as:
+
+\[
+\hat{\theta}^{MLE} = \Phi^{-1}\Big(\frac{3-\hat{\rho}^{MLE}}{4}\Big) = \Phi^{-1}\Big(\frac{1}{2} + \frac{1}{2}\frac{\sum_{m=1}^M \mathbbm{1}[x_{m1} \neq x_{m2}]}{M} \Big) = \Phi^{-1}\Big(1 - \frac{1}{2}\frac{\sum_{m=1}^M \mathbbm{1}[x_{m1} = x_{m2}]}{M} \Big)
+\]
 

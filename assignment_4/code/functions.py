@@ -101,7 +101,7 @@ def compute_np_cdf_and_v_2(nbr_bins, df):
     cdf['a'] = cdf['G1'].shift(1) - cdf['m']*cdf['min_bin']
     cdf['m'][0] = 0
     cdf['a'][0] = 0   
-    cdf['v_2'] = 0
+    cdf['v_2'] = np.nan
     for i in range(nbr_bins):
         j = i + 1
         result = False

@@ -38,7 +38,7 @@ ax1.plot(cdf['max_bin'], np.repeat(v_2_star_np, nbr_bins+1), label = r'$\hat{v(2
 ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), shadow=True, ncol=2)
 ax1.set_xlabel('S')
 ax1.set_ylabel('Probability or v(2)')
-ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+ax2 = ax1.twinx()
 ax2.bar(cdf['max_bin'],cdf['counties_per_bin'], color = 'Red', label = 'Counties per bin')
 ax2.set_ylabel('Counties per bin')
 fig.tight_layout()
