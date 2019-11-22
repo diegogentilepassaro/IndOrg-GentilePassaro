@@ -1,0 +1,290 @@
+---
+title: "Summary"
+output: pdf_document
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+knit: (function(inputFile, encoding) { 
+      out_dir <- '../output';
+      intermediates_dir <- '../output';
+      clean <- TRUE;
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=file.path(dirname(inputFile), 
+                        out_dir, 'summary.pdf')) })
+header-includes: 
+  - \usepackage{tikz}
+  - \usepackage{pgfplots}
+  - \usepackage{float}
+  - \floatplacement{figure}{H}
+  - \floatplacement{table}{H}
+  - \pgfplotsset{compat=1.16}
+---
+
+```{r setup, include=FALSE}
+library(haven)
+library(dplyr)
+library(stringr)
+library(knitr)
+library(pander)
+
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=12, fig.height=8)
+```
+
+# Allocation: Theory
+
+Firms $i$ in an industry each produce output $Y_i$ using a single input $X_i$ according to the production function:
+
+\[
+Y_i = A_iX_i^\beta
+\]
+
+where $A_i$ is firm productivity and $\beta \in (0,1)$ is a parameter. Say that the industry is efficient if it produces the maximum possible output given the total amount of input used. Let lowercase letters denote natural logarithms, so that $x_i = lnX_i$. Assume that there is a fixed number of firms N.
+
+## (a) What is the coefficient in a regression of $y_i$ on $a_i$ in an efficient industry?
+
+First let's define what are the conditions for an efficient industry.  An industry is efficient if:
+
+\[
+\begin{aligned}
+& \max_{\{X_i\}_{i=1}^N} \ \ \sum_{i=1}^N A_i X_i^\beta \\
+& \ \ \ \ \ s.t. \ \ \sum_{i=1}^NX_i = X
+\end{aligned}
+\]
+
+Where $X$ is the total amount of inputs used. First order conditions imply immediately that:
+
+\[
+\beta A_i X_i^{\beta-1} = \lambda \ \forall i \to X_i = \Big(\frac{\lambda}{A_i \beta}\Big)^{\frac{1}{\beta-1}} \ \forall i
+\]
+
+Using the constraint we have that:
+
+\[
+\sum_{i=1}^N X_i = X \to \sum_{i=1}^N \Big(\frac{\lambda}{A_i \beta}\Big)^{\frac{1}{\beta-1}} = X
+\]
+
+So we can solve for $\lambda$:
+
+\[
+\lambda = \beta X^{\beta-1}\Big(\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big)^{1-\beta}
+\]
+
+Now, we can replace $\lambda$ in the equation of $X_i$ to get:
+
+\[
+X_i = X\frac{A_i^{\frac{1}{1-\beta}}}{\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}}
+\]
+
+Note that this implies that if $A_i > A_j$ then $X_i > X_j$. Now, we can take logs and get:
+
+\[
+x_i = x + \frac{1}{1-\beta}a_i - \ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big]
+\]
+
+Now, define the following regression model:
+
+\[
+y_i = \alpha_0 + \alpha_1 a_i + \epsilon_i
+\]
+
+Then, the population coefficient would be:
+
+\[
+\alpha_1 = \frac{Cov(y_i, a_i)}{Var(a_i)} = \frac{Cov(a_i + \beta x_i, a_i)}{Var(a_i)} = 1 + \beta \frac{Cov(x_i, a_i)}{Var(a_i)}
+\]
+
+Note that:
+
+\[
+Cov(x_i, a_i) = Cov(x + \frac{1}{1-\beta}a_i - \ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big], a_i) = \frac{1}{1-\beta}Var(a_i) - Cov(\ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big], a_i)
+\]
+
+Using this result we obtain that:
+
+\[
+\alpha_1 = 1 + \beta \frac{Cov(x_i, a_i)}{Var(a_i)} = 1 + \frac{\beta}{1-\beta} - \beta \frac{Cov(\ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big], a_i)}{Var(a_i)}
+\]
+
+For a fixed number of firms $N$ we have that $\ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big]$ is a constant. Therefore, we have that:
+
+\[
+\alpha_1 = 1 + \beta \frac{Cov(x_i, a_i)}{Var(a_i)} = 1 + \frac{\beta}{1-\beta} = \frac{1}{1-\beta}
+\]
+
+Finally, note that this is positively biased for $1$ that is the true coefficient of $a_i$ in the log production function.
+
+## (b) What is the coefficient in a regression of $y_i$ on xi in an efficient industry?
+
+Define the following regression model:
+
+\[
+y_i = \gamma_0 + \gamma_1 x_i + \eta_i
+\]
+
+Then, the population coefficient would be:
+
+\[
+\gamma_1 = \frac{Cov(y_i, x_i)}{Var(x_i)} = \frac{Cov(a_i + \beta x_i, x_i)}{Var(x_i)} = \frac{Cov(a_i, x_i)}{Var(x_i)} + \beta
+\]
+
+Now, note that:
+
+\[
+Var(x_i) = \Big(\frac{1}{1-\beta}\Big)^2Var(a_i) + Var\Big(\ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big]\Big) - 2\frac{1}{1-\beta}Cov(\ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big], a_i)
+\]
+
+Using also the result from part **(a)** we get that:
+
+\[
+\gamma_1 = \frac{Cov(a_i, x_i)}{Var(x_i)} + \beta = \frac{\frac{1}{1-\beta}Var(a_i) - Cov(\ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big], a_i)}{\Big(\frac{1}{1-\beta}\Big)^2Var(a_i) + Var\Big(\ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big]\Big) - 2\frac{1}{1-\beta}Cov(\ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big], a_i)} + \beta
+\]
+
+Again using that for a fixed number of firms $N$ we have that $\ln\Big[\sum_{i=1}^N A_i^{\frac{1}{1-\beta}}\Big]$ is a constant, we get that:
+
+\[
+\gamma_1 = \frac{Cov(a_i, x_i)}{Var(x_i)} + \beta = \frac{1-\beta}{1} + \beta = 1
+\]
+
+Finally, note that this is positively biased for $\beta$ that is the true coefficient of $x_i$ in the log production function.
+
+
+## (c) Suppose that output and inputs are each traded in a perfectly competitive market with a price of 1. Is the equilibrium efficient?
+
+The given assumptions imply that the FOC for profit maximization of a given firm is just:
+
+\[
+\beta A_i {X^*_i}^{\beta-1} = 1 \ \forall i
+\]
+
+Which essentially means that $\lambda = 1$, and therefore we have that:
+
+\[
+X_i^* = \Big(\frac{1}{\beta A_i}\Big)^{\frac{1}{\beta-1}} \ \forall i
+\]
+
+Therefore, the competitive equilibrium is efficient. 
+
+## (d) In the competitive equilibrium described in (c), is $\beta$ identified from the data $\{(x_i, y_i)\}_{i=1}^N$? Is $\{A_i\}_{i=1}^N$ identified?
+
+Given that the competetitive equilibrium is efficient, we can use the result from **(b)**. Then, for the following regression model:
+
+\[
+y_i = \gamma_0 + \gamma_1 x_i + \eta_i
+\] 
+
+we have that:
+
+\[
+\gamma_1 = \frac{Cov(a_i, x_i)}{Var(x_i)} + \beta = 1
+\]
+
+So $\beta$ is not identified. If we knew $\beta$ we could compute $\{A_i\}_{i=1}^N$ by doing:
+
+\[
+A_i = \exp(y_i - \beta x_i)
+\]
+
+But as we cannot learn it from the data $\{(x_i, y_i)\}_{i=1}^N$, then $\{A_i\}_{i=1}^N$ is not identified.
+
+## (e) A central planner assigns inputs to firms to ensure that output is identical across firms, i.e. that $Y_i = Y$ for all $i$. How much less total output is produced than would be the case under an efficient allocation of the same total amount of inputs?
+
+Start by noting that if $Y_i = Y \ \forall i$ then it must be true that:
+
+\[
+A_i X_i^\beta = Y \ \forall i \to X_i = \Big(\frac{Y}{A_i}\Big)^{\frac{1}{\beta}}
+\]
+
+Using the feasibility constraint for total inputs $X$ we get that:
+
+\[
+\sum_{i=1}^N X_i = X \to \sum_{i=1}^N \Big(\frac{Y}{A_i}\Big)^{\frac{1}{\beta}} = X
+\]
+
+Solving for $Y$ we get that:
+
+\[
+Y = \Bigg(\frac{X}{\sum_{i=1}^N \Big(\frac{1}{A_i}\Big)^{\frac{1}{\beta}}}\Bigg)^\beta
+\]
+
+Therefore, we have that:
+
+\[
+X_i = X \frac{\Big(\frac{1}{A_i}\Big)^{\frac{1}{\beta}}}{\sum_{i=1}^N \Big(\frac{1}{A_i}\Big)^{\frac{1}{\beta}}}
+\]
+
+Now, note that:
+
+\[
+NY = N \Bigg(\frac{X}{\sum_{i=1}^N \Big(\frac{1}{A_i}\Big)^{\frac{1}{\beta}}}\Bigg)^\beta
+\]
+
+As for the efficient allocation for the same amount of total input $X$, using the result from (c), we have that:
+
+\[
+\sum_{i=1}^N Y_i^* = \sum_{i=1}^N A_i {X_i^*}^\beta = \sum_{i=1}^N A_i \Big(\frac{1}{\beta A_i}\Big)^{\frac{\beta}{\beta-1}}
+\]
+
+After some algebraic operations we get that:
+
+\[
+\sum_{i=1}^N Y_i^* = \beta^{\frac{\beta}{1-\beta}} \sum_{i=1}^N A_i^{\frac{1}{1-\beta}}
+\]
+
+Now, note that we can use the fact that $\sum_{i=1}^N X_i^* = \sum_{i=1}^N \Big(\frac{1}{\beta A_i}\Big)^{\frac{1}{\beta-1}} X$ to get:
+
+\[
+\sum_{i=1}^N Y_i^* = \frac{X}{\beta}
+\]
+
+Putting all together we have that total output that is sacrificed by a central planner that allocates inputs such that $Y_i = Y$ relative to an efficient allocation is then:
+
+\[
+\sum_{i=1}^N Y_i^* - NY = \frac{X}{\beta} - N \Bigg(\frac{X}{\sum_{i=1}^N \Big(\frac{1}{A_i}\Big)^{\frac{1}{\beta}}}\Bigg)^\beta
+\]
+
+## (f) In the competitive equilibrium described in (c), are $\{\beta_i, A_i\}_{i=1}^N$ identified if we now posit that $Y_i = A_i X_i^{\beta_i}$? Provide some economic intuition.
+
+ In this case for an equilibrium as in **(c)** we know that:
+ 
+ \[
+ \beta_i A_i X_i^{\beta_i-1} = 1
+ \]
+ 
+ Multiplying both sides by $X_i$ we have that:
+ 
+ \[
+ \beta_i A_I X_i^{\beta_i-1} = X_i \to \beta_i Y_i = X_i
+ \]
+ 
+ So that:
+ 
+ \[
+ \beta_i = \frac{X_i}{Y_i}
+ \]
+ 
+ Therefore, we have that:
+ 
+ \[
+ Y_i = A_i X_i^{\frac{X_i}{Y_i}} \to A_i = \frac{Y_i}{X_i^{\frac{X_i}{Y_i}}}
+ \]
+ 
+Intuitively, if we know the functional form of the production function we can use its implications - i.e. that the expenditure on input is a constant share of output value - to find the parameters. 
+
+# Allocation: Evidence
+
+## (a) Estimate a regression of $y_i$ on $x_i$ separately for each country-year and report the results. Comment on whether they are consistent with efficiency in the sense of question 1.
+
+The results are displayed in the table below:
+
+\input{"../output/table_1.tex"}
+
+Note that I report the p-value of an F-test of the estimated coefficient of $x_i$, $\hat{\beta}$, being equal to 1. That is because, from part **1(b)** we know that in an efficient industry we should expect this coefficient to be equal to 1. The only country-year in which we cannot reject $\hat{\beta} = 1$ is Sri Lanka 2004. 
+
+## (b) Suppose that each firm has its own coefficient $\beta_i$. Use the assumptions from **1(f)** to estimate $\beta_i$ for each firm. Compute, for each country-year, the percent increase in textile output from moving to an efficient allocation of capital.
+
+## (c) Now suppose that all textile firms in the world have the same coefficient $\beta$. Using your answers to **1(b)** and **2(a)**, identify the country-year $c^*$ that is closest to an efficient allocation of capital. Estimate $\beta$ under the assumption that the economy in $c^*$ is competitive in the sense of **1(c)** and that the rental rate on capital is 2.5 percent of its value.
+
+## (d) Using your estimate of $\beta$ from **2(c)**, compute, for each country-year, the percent increase in textile output from moving to an efficient allocation of capital.
+
+## (e) Which country shows the smallest gain from reallocation? Why?
+
