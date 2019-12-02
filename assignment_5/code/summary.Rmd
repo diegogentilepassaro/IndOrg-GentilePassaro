@@ -30,6 +30,10 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.width=12, fig.height=8)
 ```
 
+```{r run_code, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+  source("assignment_5.R")
+```
+
 # Allocation: Theory
 
 Firms $i$ in an industry each produce output $Y_i$ using a single input $X_i$ according to the production function:
@@ -166,25 +170,25 @@ Therefore, the competitive equilibrium is efficient.
 
 ## (d) In the competitive equilibrium described in (c), is $\beta$ identified from the data $\{(x_i, y_i)\}_{i=1}^N$? Is $\{A_i\}_{i=1}^N$ identified?
 
-Given that the competetitive equilibrium is efficient, we can use the result from **(b)**. Then, for the following regression model:
+Given that the competetitive equilibrium is efficient, we have that:
 
 \[
-y_i = \gamma_0 + \gamma_1 x_i + \eta_i
-\] 
-
-we have that:
-
-\[
-\gamma_1 = \frac{Cov(a_i, x_i)}{Var(x_i)} + \beta = 1
+\beta A_i {X^*_i}^{\beta-1} = 1 \ \forall i
 \]
 
-So $\beta$ is not identified. If we knew $\beta$ we could compute $\{A_i\}_{i=1}^N$ by doing:
+Multiplying both sides by $X_i$ and reordering we get that:
+
+\[
+\beta = \frac{X_i}{Y_i}
+\]
+
+So $\beta$ is identified. If we know $\beta$ we can compute $\{A_i\}_{i=1}^N$ by doing:
 
 \[
 A_i = \exp(y_i - \beta x_i)
 \]
 
-But as we cannot learn it from the data $\{(x_i, y_i)\}_{i=1}^N$, then $\{A_i\}_{i=1}^N$ is not identified.
+Then $\{A_i\}_{i=1}^N$ is identified. Note however, that the data would reject the model as any dataset, including the one we were provided, would find different $\beta$'s for different firms. 
 
 ## (e) A central planner assigns inputs to firms to ensure that output is identical across firms, i.e. that $Y_i = Y$ for all $i$. How much less total output is produced than would be the case under an efficient allocation of the same total amount of inputs?
 
@@ -282,9 +286,60 @@ Note that I report the p-value of an F-test of the estimated coefficient of $x_i
 
 ## (b) Suppose that each firm has its own coefficient $\beta_i$. Use the assumptions from **1(f)** to estimate $\beta_i$ for each firm. Compute, for each country-year, the percent increase in textile output from moving to an efficient allocation of capital.
 
+Under assumptions from **1(f)** we have that the economies are in a competitive equilibrium. By **1(c)**, we have that a competitive equilibrium is efficient and therefore the the percent increase in textile output from a counterfactual move to an efficient allocation of capital is 0.  
+
 ## (c) Now suppose that all textile firms in the world have the same coefficient $\beta$. Using your answers to **1(b)** and **2(a)**, identify the country-year $c^*$ that is closest to an efficient allocation of capital. Estimate $\beta$ under the assumption that the economy in $c^*$ is competitive in the sense of **1(c)** and that the rental rate on capital is 2.5 percent of its value.
+
+The country-year that is closest to an efficient allocation of capital, $c^*$, is Sri Lanka in 2004 which has a statistically significant coefficient of 0.906. Now, given a rental rate of capital of 0.025 we have in a competitive equilibrium that:
+
+\[
+\beta A_i X_i^{\beta - 1} = 0.025 \to \beta = \frac{0.025 X_i}{Y_i} \ \forall i
+\]
+
+Obviously, this is rejected by the data as $\beta$ wouldn't be the same for all firms. However, we can think of observing $\beta$ with error. In order to get an estimate of $\beta$ what I do is take the weighted mean of the $\beta$'s computed for each firm where the weights are given by the capital inputs of the firm $X_i$. A potential justification for this would be that the measurement error thorugh balance sheets is smaller in larger firms. The result of this operation is $\beta = `r round(beta, 3)`$.
 
 ## (d) Using your estimate of $\beta$ from **2(c)**, compute, for each country-year, the percent increase in textile output from moving to an efficient allocation of capital.
 
+Start by noting that knowledge of $\beta$ allows us to compute $A_i \ \forall i$ by:
+
+\[
+A_i = \frac{Y_i}{X_i^{\beta}}
+\]
+
+Let the superscript $c$ index countries. Then, from the solution of the effcient industry problem in part **1(a)** we know that for each country-year:
+
+\[
+X_i^c = X^c\frac{{A_i^c}^{\frac{1}{1-\beta}}}{\sum_{i=1}^N {A_i^c}^{\frac{1}{1-\beta}}}
+\]
+
+Which is a function of known values as we can obtain $X^c$ by summing the inputs of all the firms within a country. Now we can find the efficient output of each firm and sum over all firms of a country to obtain:
+
+\[
+\sum_{i=1}^{N^c} {Y_i^c}^*
+\]
+
+Therefore, for a given country the percentage change in textile output from moving to an efficient allocatio of capital would be given by:
+
+\[
+\frac{\sum_{i=1}^{N^c} {Y_i^c}^* - \sum_{i=1}^{N^c} Y^c_i}{\sum_{i=1}^{N^c} Y^c_i}*100
+\]
+
+The results are displayed in the table below:
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+Country-Year & \% change in textile output  \\ \hline\hline
+Brazil-2003 & `r round(by_country_data[1, "perc_chg_move_to_eff"], 3)` \\
+India-2002 & `r round(by_country_data[2, "perc_chg_move_to_eff"], 3)` \\
+Indonesia-2003 & `r round(by_country_data[3, "perc_chg_move_to_eff"], 3)` \\
+Sri Lanka-2004 & `r round(by_country_data[4, "perc_chg_move_to_eff"], 3)` \\
+Thailand-2004 & `r round(by_country_data[5, "perc_chg_move_to_eff"], 3)` \\
+ \hline
+\end{tabular}
+\end{table}
+
 ## (e) Which country shows the smallest gain from reallocation? Why?
 
+The country that shows the smallest gain from reallocation is Sri Lanka. This is so because it is the country that, prior to the reallocation of capital, was closer to efficiency. 

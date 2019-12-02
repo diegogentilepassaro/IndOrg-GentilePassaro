@@ -5,6 +5,8 @@ cd "/Users/dgentil1/Desktop/Diego/Brown/Industrial Organization/Industrial Organ
 program main
     use "../raw_data/Replication_File_JPE/stata/comprehensive.dta", clear
     clean_data 
+	export delimited using "../temp/clean_data.csv", replace
+
 
 	* (a)
 	levelsof country_year, local(c_y)
@@ -23,7 +25,9 @@ program main
 
    * (b)
    gen beta_i = X/Y
+   gen A_i = Y*(X^(-beta_i))
    
+   * (c) was done in R
 end
 
 program clean_data
@@ -40,6 +44,7 @@ program clean_data
 	gen x = ln(X)
 
 	drop if (missing(Y) | missing(X))
+	drop if (Y <= 0 | X <= 0)
 	
 	bysort country year: egen nbr_obs = count(idstd)
 	keep if nbr_obs >= 50
