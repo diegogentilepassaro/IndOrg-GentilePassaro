@@ -1,0 +1,380 @@
+---
+title: "Summary"
+output: pdf_document
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+knit: (function(inputFile, encoding) { 
+      out_dir <- '../output';
+      intermediates_dir <- '../output';
+      clean <- TRUE;
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=file.path(dirname(inputFile), 
+                        out_dir, 'summary.pdf')) })
+header-includes: 
+  - \usepackage{tikz}
+  - \usepackage{pgfplots}
+  - \usepackage{float}
+  - \usepackage{bbm}
+  - \floatplacement{figure}{H}
+  - \floatplacement{table}{H}
+  - \pgfplotsset{compat=1.16}
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=10, fig.height=6)
+```
+
+# Retail
+
+Assume that each county $i$ is a distinct market with population $S_i$ and let $N_i \in \{0,1,2\}$ denote
+the number of big-box discount retailers (Kmart or Walmart) in the county. Assume that profits to a discount retailer in county $i$ are given by:
+
+\[\pi(S_i,N_i,F_i) = S_iv(N_i) - F_i\]
+
+Where $v()$ is per-capita variable profit, strictly decreasing in its argument, and $F_i$ is a fixed
+cost distributed i.i.d. normal with mean$\mu$ and standard deviation $\sigma$ across counties. Importantly, this model treats Walmart and K-mart as identical and ignores other retailers. The
+model also ignores the fact that Walmart and Kmart may coordinate their entry decisions across markets. 
+
+## (a) Estimate the parameters of the model
+
+With the assumptions given we have that:
+
+\[
+\begin{aligned}
+& Prob(N_i^* = n) = Prob([\pi(S_i,n,F_i)\geq0] \cap [\pi(S_i,n+1,F_i)\leq0]) = \\
+& = Prob(S_i v(n+1) \leq F_i \leq S_i v(n)) = Prob(F_i \leq S_i v(n)) - Prob(F_i \leq S_i v(n+1)) = \\
+& = \Phi\Big(\frac{S_i v(n) - \mu}{\sigma}\Big) - \Phi\Big(\frac{S_i v(n+1) - \mu}{\sigma}\Big)
+\end{aligned}
+\]
+
+Now, if we normalize $v(1) = 1$, and we note that $Prob(F_i \leq S_i v(0)) = 1$\footnote{One way to think about this is that $\lim_{n\to0} v(n) = \infty$.} we have that:
+
+\[
+\begin{aligned}
+& Prob(N_i^* = 0) = 1 - \Phi\Big(\frac{S_i - \mu}{\sigma}\Big) \\
+& Prob(N_i^* = 1) = \Phi\Big(\frac{S_i - \mu}{\sigma}\Big) - \Phi\Big(\frac{S_i v(2) - \mu}{\sigma}\Big) \\
+& Prob(N_i^* = 2) = 1 - Prob(N_i^* = 0) -  Prob(N_i^* = 1)
+\end{aligned}
+\]
+
+Then, the likelihood of the data is just:
+
+\[
+L = \prod_{i = 1}\prod_{n = 0}^2 Prob(N_i^* = n)^{\mathbbm{1}\{N_i^* = n\}}
+\]
+
+And the log-likelihood is just:
+
+\[
+ll = \sum_{i = 1}\sum_{n = 0}^2 \mathbbm{1}\{N_i^* = n\} \log(Prob(N_i^* = n))
+\]
+
+Where $i$ indexes counties. Now, we can maximize $ll$ with respect to $\mu, \sigma$ and $v(2)$ to get our ML estimates of the parameters. The results are displayed in the table below:
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+ML estimates \\ \hline\hline
+$\mu$ & 25.071 \\ 
+$\sigma$ & 14.800 \\ 
+$v(2)$ & 0.288 \\
+\hline\hline
+\end{tabular}
+\end{table}
+
+## (b) Offer an economic interpretation of each parameter’s magnitude.
+
+The mean of the fixed cost distribution is around 25 times the monopolist per thousand people variable profits, and the standard deviation is about 14.8 times the latter. Note that the normality assumption implies that some counties have negative fixed costs. As for $v(2)$, the economic interpretation is that the per thousand people variable profits of a duopoly fall by 71.2\% as compared to the per thousand people variable profits of a monopoly. 
+
+## (c) Re-estimate the model, but now assume that the mean of fixed costs is $\mu_1$ for the first entrant and $\mu_2 \geq \mu_1$ for the second entrant. Report the parameter values you estimate.
+
+Now, we have that:
+
+\[
+\begin{aligned}
+& Prob(N_i^* = 0) = 1 - \Phi\Big(\frac{S_i - \mu_1}{\sigma}\Big) \\
+& Prob(N_i^* = 1) = \Phi\Big(\frac{S_i - \mu_1}{\sigma}\Big) - \Phi\Big(\frac{S_i v(2) - \mu_2}{\sigma}\Big) \\
+& Prob(N_i^* = 2) = 1 - Prob(N_i^* = 0) -  Prob(N_i^* = 1)
+\end{aligned}
+\]
+
+So we can write the likelihood and the log-likelihood as before but with these new probabilities. Now, we maximize with respect to $\mu_1, \mu_2, \sigma$ and $v(2)$. I have not imposed that $\mu_2 \geq \mu_1$ as the unconstrained maximization delivered exactly that. The results are displayed below:
+
+\begin{table}
+\centering
+\begin{tabular}{cc}
+\hline
+ML estimates \\ \hline\hline
+$\mu_1$ & 25.717 \\ 
+$\mu_2$ & 52.307 \\ 
+$\sigma$ & 18.871 \\ 
+$v(2)$ & 0.938 \\
+\hline\hline
+\end{tabular}
+\end{table}
+
+## (d) How does your estimate of $v()$ change between (a) and (c)? Why?
+
+Allowing for the second entrant to have a fixed cost with a different mean substantially changes the results. The average esimated fixed cost for the second entrant is around twice the one estimated for the first entrant, and therefore the per thousand people variable profits of a duopoly as compared with a monopoly falls by 6.2\% instead of by 71.2\%. Basically the predicted share of market of the second entrant in model (c) is much smaller than the one predicted by the model in (a), and so the competition over variable profits is also smaller. 
+
+## (e) Return to the setting in part (a) but drop the assumption that $F_i$ is distributed normally. Instead, assume that $F_i$ is i.i.d. with a smooth CDF. Estimate v().
+
+With this assumption we have that:
+
+\[
+\begin{aligned}
+& Prob(N_i^* = 0|S_i) = 1 - \tilde\Phi\Big(S_i\Big) \\
+& Prob(N_i^* = 1|S_i) = \tilde\Phi\Big(S_i\Big) - \tilde\Phi\Big(S_i v(2)\Big) \\
+& Prob(N_i^* = 2|S_i) = 1 - Prob(N_i^* = 0|S_i) -  Prob(N_i^* = 1|S_i) \\
+\end{aligned}
+\]
+
+Where $\tilde\Phi()$ denotes the i.i.d distribution of $F_i$. Therefore, we have that:
+
+\[
+\tilde\Phi\Big(S_i\Big) = 1-Prob(N_i^* = 0|S_i)
+\]
+
+And that:
+
+\[
+\tilde\Phi\Big(S_i v(2)\Big)  = 1-Prob(N_i^* = 0|S_i) - Prob(N_i^* = 1|S_i)
+\]
+
+And therefore we get that:
+
+\[
+v(2) = \frac{\tilde\Phi^{-1}\Big(1-Prob(N_i^* = 0|S_i) - Prob(N_i^* = 1|S_i)\Big)}{S_i}
+\]
+
+There are a lot of ways to estimate the $\tilde\Phi()$. I am going to do it piecewise linearly, therefore assuming that the CDF is almost-surely smooth and i.i.d. First, I bin the population in $K$ equal sized bins. Then I compute the stated probabilities for each bin, and using them I get estimates $G_1(S^k)$ of $\tilde\Phi\Big(S_i\Big)$ and $G_2(S^k)$ of $\tilde\Phi\Big(S_i v(2)\Big)$, where $S^k$ denotes the rightmost edge of a population bin $k$. Then, I construct my estimate of $\tilde\Phi(S_i)$ as a piece-wise linear function going thrugh the estimates $G_1(S^k)$. Then, motivated by what I just showed, I invert the estimates $G_2(S^k)$ according to:
+
+\[
+\hat{v(2)}(S^k) = \frac{\tilde\Phi^{-1}\Big(G_2(S^k)\Big)}{S^k}
+\]
+
+Finally, I obtain $\hat{v(2)}$ by taking a weighted average over $\hat{v(2)}(S^k)$ where the weights are given by the number of counties per bin. My estimate of $v(2)$ is equal to $0.357$. A graphical report of the results for the case using 7 bins is below:
+
+![]("../output/figure_1")
+
+If the model were true we would observe that the orange line is exactly horizontal. Potentially, we could test jointly if the $v(2)(S^k)$'s are all statistically distinguishable or not. If we reject that they are all equal we can also reject that the model is correct. 
+
+## (f) How do your results in (e) compare to those in (a)? What does this suggest about the importance of the normality assumption on Fi?
+
+The estimated $v(2)$ with the normality assumption is $20\%$ smaller than with the non-parametric procedure described. Therefore, the normality assumption leads us to overstate degree of competition in a duopoly relative to a monopoly.
+
+# Type 
+
+There is a set of markets indexed by $m$. In each market there are two firms, 1 and 2. The firms play the following game. Firm 1 chooses a binary attribute $x_{m1}\in\{0,1\}$, after which firm 2 observes $x_{m1}$ and chooses $x_{m2}\in\{0,1\}$. The firms realize payoffs given by:
+
+\[
+\pi_{mi} = \eta_m \Big(x_{mi} - \frac{1}{2}\Big) - \theta(1 - |x_{m1} - x_{m2}|)
+\]
+
+Where $\eta_m$ is distribited i.i.d. across markets $m$ according to distribution $\tilde\Phi$ symmetric around 0. We may think of $\theta\geq 0$ as the incentive to differentiate from one’s competitor. We may think of $\eta_m$ as a market-level shock to consumer preferences for firm attributes. The shock $\eta_m$ is common knowledge to the firms in market $m$. 
+
+## (a) Characterize the equilibrium of the game for a given market $m$ as a function of $\theta$ and $\eta_m$.
+
+We can proceed by backward induction. Firm 2 observes the action of firm 1 and chooses $x_{m2}$ to maximize $\pi_{m2}$. 
+
+If firm 2 observes $x_{m1} = 0$ then compares:
+
+\[
+\begin{aligned}
+& \pi_{m2} (0,0) = \frac{-\eta_m}{2}-\theta \\
+& \pi_{m2} (0,1) = \frac{\eta_m}{2}
+\end{aligned}
+\]
+
+Now, note that $pi_{m2} (0,0) \geq pi_{m2} (0,1) \iff \eta_m \leq -\theta$. Then, ignoring the measure 0 case we have that firm 2 chooses $x_{m2} = 0$ if $\eta_m < -\theta$ and chooses $x_{m2} = 1$ if $\eta_m > -\theta$.
+
+If firm 2 observes $x_{m1} = 1$ then compares:
+
+\[
+\begin{aligned}
+& \pi_{m2} (1,0) = \frac{-\eta_m}{2} \\
+& \pi_{m2} (1,1) = \frac{\eta_m}{2} - \theta
+\end{aligned}
+\]
+
+Now, note that $pi_{m2} (1,0) \geq pi_{m2} (1,1) \iff \eta_m \leq \theta$. Then, ignoring the measure 0 case we have that firm 2 chooses $x_{m2} = 0$ if $\eta_m < \theta$ and chooses $x_{m2} = 1$ if $\eta_m > \theta$.
+
+With the best response of firm 2 at hand we can solve for the best response of firm 1. 
+
+**Case 1 - $\eta < -\theta$**
+
+If $\eta < -\theta$, firm 2 will play $x_{m2} = 0$ no matter what is the action of firm 1. Knowing this firm 1 will compare:
+
+\[
+\begin{aligned}
+& \pi_{m1} (0,0) = \frac{-\eta_m}{2} - \theta \\
+& \pi_{m1} (1,0) = \frac{\eta_m}{2}
+\end{aligned}
+\]
+
+Now, note that $pi_{m1} (0,0) \geq \pi_{m1} (1,0) \iff \eta_m \leq -\theta$. Therefore, as we assumed that $\eta < -\theta$ we have that firm 1 will play $x_{m1} = 0$. 
+
+**Case 2 - $-\theta < \eta_m < \theta$**
+
+If $-\theta < \eta_m < \theta$ then:
+
+\[
+x_{m2}^{BR} = \begin{cases} 
+      1 & \text{if} \ \  x_{m1} = 0 \\
+      0 & \text{if} \ \  x_{m1} = 1 
+   \end{cases}
+\]
+
+Therefore, firm 1 compares:
+
+\[
+\begin{aligned}
+& \pi_{m1} (0,1) = \frac{-\eta_m}{2} \\
+& \pi_{m1} (1,0) = \frac{\eta_m}{2}
+\end{aligned}
+\]
+
+Now, note that $pi_{m1} (0,1) \geq \pi_{m1} (1,0) \iff \eta_m \leq 0$. Therefore, we have that:
+
+\[
+x_{m1}^{BR} = \begin{cases} 
+      0 & \text{if} \ \  \eta_m <  0 \\
+      1 & \text{if} \ \  \eta_m >  0 
+   \end{cases}
+\]
+
+**Case 3 - $\eta > \theta$**
+
+If $\eta > \theta$, firm 2 will play $x_{m2} = 1$ no matter what is the action of firm 1. Knowing this firm 1 will compare:
+
+\[
+\begin{aligned}
+& \pi_{m1} (0,1) = \frac{-\eta_m}{2} \\
+& \pi_{m1} (1,1) = \frac{\eta_m}{2} - \theta
+\end{aligned}
+\]
+
+Now, note that $pi_{m1} (0,1) \geq \pi_{m1} (1,1) \iff \eta_m \leq \theta$. Therefore, as we assumed that $\eta > \theta$ we have that firm 1 will play $x_{m1} = 1$.
+
+Putting all together we get that there are four possible equilibria. 
+
+If $\eta_m \in(-\infty, -\theta)$ then the equilibrium play is $(x_{m1}, x_{m2}) = (0,0)$.
+If $\eta_m \in(-\theta, 0)$ then the equilibrium play is $(x_{m1}, x_{m2}) = (0,1)$.
+If $\eta_m \in(0, \theta)$ then the equilibrium play is $(x_{m1}, x_{m2}) = (1,0)$.
+If $\eta_m \in(\theta, \infty)$ then the equilibrium play is $(x_{m1}, x_{m2}) = (1,1)$.
+
+## (b) Let $\rho = \frac{Cov(x_{m1}, x_{m2})}{\sqrt{Var(x_{m1})Var(x_{m2})}}$ denote the population value of the correlation between the choices of firms 1 and 2. Characterize $\rho$ as a function of $\tilde\Phi$ and $\theta$. Provide an intuition.
+
+Start by noting that because of part **(a)** if $\eta_m \leq 0$ we have that $x_{m1} = 0$. Then we have that:
+
+\[
+\begin{aligned}
+& Prob(x_{m1} = 0) = Prob(\eta_m \leq 0) = \tilde\Phi(0) \\
+& Prob(x_{m1} = 1) = Prob(\eta_m \geq 0) = 1- \tilde\Phi(0)
+\end{aligned}
+\]
+
+Now, note that by symmetry around 0 of $\tilde\Phi$ we have that $\tilde\Phi(0) = \frac{1}{2}$. Then, we have that $x_{m1}\sim Bernoulli(\frac{1}{2})$. 
+
+
+Let's now work out the distribution of $x_{m2}$. Note that:
+
+\[
+Prob(x_{m2} = 1) = Prob(-\theta \leq \eta_m \leq 0) + Prob(\eta_m \geq theta) = \tilde\Phi(0) - \tilde\Phi(-\theta)  + (1- \tilde\Phi(\theta))
+\]
+
+But that by symmetry around 0 of $\tilde\Phi$ we have that $\tilde\Phi(-\theta) = 1-\tilde\Phi(\theta)$. Therefore, we have that:
+
+\[
+\begin{aligned}
+& Prob(x_{m2} = 1) = \tilde\Phi(0) \\
+& Prob(x_{m2} = 0) = 1- \tilde\Phi(0) 
+\end{aligned}
+\]
+
+Then, using symmetry again, we have that $x_{m2}\sim Bernoulli(\frac{1}{2})$. Using the distributions that we just found we have that $\forall \ i = 1, 2$:
+
+\[
+\begin{aligned}
+& E(x_{mi}) = \frac{1}{2} \\
+& Var(x_{mi}) = \frac{1}{4}
+\end{aligned}
+\]
+
+Note that:
+
+\[
+Cov(x_{m1}, x_{m2}) = E(x_{m1}x_{m2}) - E(x_{m1})E(x_{m2}) = E(x_{m1}x_{m2}) - \frac{1}{4}
+\]
+
+So we just have to compute $E(x_{m1}x_{m2})$. Note that:
+
+\[
+E(x_{m1}x_{m2}) = Prob(x_{m1} = x_{m2} = 1) = Prob(\eta_m \geq \theta) = 1 - \tilde\Phi(\theta)
+\]
+
+Combining all we get that:
+
+\[
+\rho = \frac{1 - \tilde\Phi(\theta) - \frac{1}{4}}{\sqrt{\frac{1}{4}(\frac{1}{4})}} = 3-4\tilde\Phi(\theta)
+\]
+
+## (c) Is $\theta$ nonparametrically identified from $\rho$?
+
+Start from $\rho = 3-4\tilde\Phi(\theta)$. Note that we can rearrange as:
+
+\[
+\tilde\Phi(\theta) = \frac{3-\rho}{4}
+\]
+
+We can note now that there is not a unique $(\theta, \tilde\Phi)$ such that for a given $\rho$ we have that $\tilde\Phi(\theta) = \frac{3-\rho}{4}$. For example, consider $\tilde\Phi = \Phi$ the standard normal and $\rho = 0$. Then, $\theta \approx 0.675$ solves the equation. If instead, we consider a uniform distribution from 0 to 1, then, $\theta = 0.75$ solves the equation.
+
+## (d) Suppose that $\eta_m$ is distributed i.i.d. standard normal. Derive the maximum likelihood estimate of $\theta$.
+
+
+Using normality and the part before we have that:
+
+\[
+\theta = \Phi^{-1}\Big(\frac{3-\rho}{4}\Big)
+\]
+
+Wich is a function of $\rho$. Therefore, if we want $\hat{\theta}^{MLE}$, by the invariance property of MLE, we can jsut obtain $\hat{\rho}^{MLE}$ and plug it in. Now, note that using the results from part **(b)** we have that:
+
+\[
+\rho = \frac{Cov(x_{m1}, x_{m2})}{\sqrt{Var(x_{m1})Var(x_{m2})}} = \frac{E[(x_{m1} - \frac{1}{2})(x_{m2} - \frac{1}{2})]}{\frac{1}{4}}
+\]
+
+The MLE estimator is just the plug-in estimator:
+
+\[
+\hat{\rho}^{MLE} = \frac{\frac{1}{M} \sum_{m=1}^M (x_{m1} - \frac{1}{2})(x_{m2} - \frac{1}{2})}{\frac{1}{4}}
+\]
+
+
+Now, distributing terms and after some algebra we have that:
+
+\[
+\hat{\rho}^{MLE} = \frac{\sum_{m=1}^M \mathbbm{1}[x_{m1} = x_{m2} = 1] - \frac{1}{2}\Big(\sum_{m=1}^M \mathbbm{1}[x_{m1} = 1] + \sum_{m=1}^M \mathbbm{1}[x_{m2} = 1]\Big) + \frac{M}{4}}{\frac{M}{4}}
+\]
+
+Now, note that:
+
+\[
+\sum_{m=1}^M \mathbbm{1}[x_{m1} = 1] + \sum_{m=1}^M \mathbbm{1}[x_{m2} = 1] = \sum_{m=1}^M \Big[2\mathbbm{1}[x_{m1} = x_{m2} = 1] + \mathbbm{1}[x_{m1} = 0,  x_{m2} = 1] + \mathbbm{1}[x_{m1} = 1,  x_{m2} = 0] \Big]
+\]
+
+Therefore we have that:
+
+\[
+\hat{\rho}^{MLE} = \frac{\frac{M}{4}-\frac{1}{2}\sum_{m=1}^M[\mathbbm{1}[x_{m1} = 0,  x_{m2} = 1] + \mathbbm{1}[x_{m1} = 1,  x_{m2} = 0]]}{\frac{M}{4}} = 1 - \frac{2}{M}\sum_{m=1}^M \mathbbm{1}[x_{m1} \neq x_{m2}]
+\]
+
+Finally, we can find $\hat{\theta}^{MLE}$ as:
+
+\[
+\hat{\theta}^{MLE} = \Phi^{-1}\Big(\frac{3-\hat{\rho}^{MLE}}{4}\Big) = \Phi^{-1}\Big(\frac{1}{2} + \frac{1}{2}\frac{\sum_{m=1}^M \mathbbm{1}[x_{m1} \neq x_{m2}]}{M} \Big) = \Phi^{-1}\Big(1 - \frac{1}{2}\frac{\sum_{m=1}^M \mathbbm{1}[x_{m1} = x_{m2}]}{M} \Big)
+\]
+
